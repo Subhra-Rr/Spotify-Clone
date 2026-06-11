@@ -1,0 +1,133 @@
+{
+  "users": {
+    "demo@user.com": {
+      "id": "u-1",
+      "email": "demo@user.com",
+      "display_name": "Subhra",
+      "dob": "2006-05-15",
+      "country": "India",
+      "tier": "free",
+      "offlineDownloads": [],
+      "collaborativePlaylists": [],
+      "followedArtists": []
+    },
+    "+918249100688": {
+      "id": "u-zx1rxi2",
+      "email": "",
+      "mobile": "+918249100688",
+      "googleId": "",
+      "password": "",
+      "display_name": "Subhradeet Sabat",
+      "dob": "2000-01-01",
+      "country": "India",
+      "tier": "free",
+      "offlineDownloads": [],
+      "collaborativePlaylists": [],
+      "followedArtists": []
+    }
+  },
+  "playlists": [
+    {
+      "playlist_id": "pl-1",
+      "owner_id": "u-1",
+      "owner_name": "Premium Explorer",
+      "name": "Retro Coding Waves",
+      "description": "Chilled out high-fidelity retro syntax waves for nocturnal sessions.",
+      "visibility": "public",
+      "collaborative": false,
+      "track_ids": [
+        "t-1",
+        "t-2",
+        "t-5"
+      ],
+      "cover_url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300&q=80"
+    },
+    {
+      "playlist_id": "pl-2",
+      "owner_id": "u-1",
+      "owner_name": "Premium Explorer",
+      "name": "Collaborative Midnight Session",
+      "description": "Add your favorite nocturnal drops here.",
+      "visibility": "shared-with-link",
+      "collaborative": true,
+      "track_ids": [
+        "t-3",
+        "t-6"
+      ],
+      "cover_url": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80",
+      "collaborators": [
+        "friend@user.com"
+      ]
+    },
+    {
+      "playlist_id": "pl-a2dqos0",
+      "owner_id": "u-1",
+      "owner_name": "Premium Explorer",
+      "name": "Custom Playlist #3",
+      "description": "A custom high fidelity auditory layout.",
+      "visibility": "public",
+      "collaborative": false,
+      "track_ids": [
+        "t-1",
+        "t-2",
+        "t-3",
+        "t-4",
+        "t-5",
+        "t-8",
+        "t-7",
+        "t-6",
+        "t-9",
+        "t-12",
+        "t-11",
+        "t-10",
+        "t-15",
+        "t-16",
+        "t-13",
+        "t-17",
+        "t-14",
+        "t-18",
+        "t-19",
+        "t-20",
+        "t-22",
+        "t-21"
+      ],
+      "cover_url": "https://images.unsplash.com/photo-1487180142328-054b783fc471?w=300&q=80"
+    }
+  ],
+  "uploadedTracks": [],
+  "friendActivity": [
+    {
+      "user_id": "f-1",
+      "display_name": "Aron Miller",
+      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80",
+      "current_track": {
+        "track_id": "t-3",
+        "title": "Midnight Shadows",
+        "artist": "The Groovy Rebels",
+        "artwork_url": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80",
+        "timestamp": 1780911572224
+      }
+    },
+    {
+      "user_id": "f-2",
+      "display_name": "Sophia Chen",
+      "avatar_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80",
+      "current_track": {
+        "track_id": "t-1",
+        "title": "Ocean Eyes",
+        "artist": "Lila Sterling",
+        "artwork_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80",
+        "timestamp": 1780911452224
+      }
+    },
+    {
+      "user_id": "f-3",
+      "display_name": "Elena Rostova",
+      "avatar_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&q=80",
+      "current_track": null
+    }
+  ],
+  "podcastPositions": {
+    "ep-2_1": 0
+  }
+}

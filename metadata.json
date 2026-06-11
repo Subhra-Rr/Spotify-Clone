@@ -1,0 +1,6 @@
+{
+  "name": "Spotify Clone",
+  "description": "A high-fidelity Spotify Clone featuring custom playlists, offline download, social sharing, friend activity tracking, integrated simulated payments, AI recommendations, and interactive equalizers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
