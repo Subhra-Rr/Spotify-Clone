@@ -30,11 +30,31 @@ import {
   Eye,
   Settings,
   Sparkles,
-  Smartphone
+  Smartphone,
+  Heart
 } from 'lucide-react';
 import { Track, Playlist, Podcast, Artist, Album, UserProfile } from '../types';
 import AdminPanel from './AdminPortal';
 import { getRandomArtists, POPULAR_ARTISTS_DATABASE } from '../data/popularArtists';
+
+const PRESET_SEEDS = [
+  "Chill study coding loops",
+  "High-energy synth programming",
+  "Retro futuristic dream pop",
+  "Cozy campfire acoustic night",
+  "Deep focus ambient drone",
+  "Cyberpunk coding trance",
+  "Nocturnal rain lofi beats",
+  "Classic emotional melodies",
+  "Uplifting melodic techno",
+  "Acoustic morning sunrise",
+  "Ethereal shoegaze dreamscape",
+  "Jazz hop coffee lounge",
+  "Deep house coding beats",
+  "Chill lofi study frequencies",
+  "Euphoric progressive house",
+  "Atmospheric post-rock journey"
+];
 
 interface MainContentProps {
   activeView: string;
@@ -64,6 +84,8 @@ interface MainContentProps {
   onDeleteTrack?: (trackId: string) => void;
   onUpdateUserTier?: (email: string, tier: 'free' | 'premium') => void;
   onDeleteUserAccount?: (email: string) => void;
+  favoriteTrackIds?: string[];
+  onToggleFavorite?: (trackId: string) => void;
 }
 
 export default function MainContent({
@@ -93,7 +115,9 @@ export default function MainContent({
   onIngestTrack,
   onDeleteTrack,
   onUpdateUserTier,
-  onDeleteUserAccount
+  onDeleteUserAccount,
+  favoriteTrackIds = [],
+  onToggleFavorite
 }: MainContentProps) {
   // Search parameters (fallback locally if prop not passed, though lifted is preferred)
   const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -225,9 +249,10 @@ export default function MainContent({
   }, [currentUser]);
 
   // Handle Fetching Gemini Recommendations
-  const fetchGeminiRecommendations = async () => {
+  const fetchGeminiRecommendations = async (overrideQuery?: string) => {
     setRecsLoading(true);
     setGeminiRecs([]);
+    const activeQuery = overrideQuery !== undefined ? overrideQuery : recsQuery;
     try {
       const historyMeta = tracks.slice(0, 3).map(t => ({ title: t.title, artist: t.artist }));
       const response = await fetch('/api/recommendations', {
@@ -238,7 +263,7 @@ export default function MainContent({
         body: JSON.stringify({
           history: historyMeta,
           email: currentUser.email,
-          query: recsQuery,
+          query: activeQuery,
           timestamp: Date.now()
         }),
       });
@@ -255,10 +280,23 @@ export default function MainContent({
     }
   };
 
+  const handleRegenerateSeedAndRecommendations = (forceSeed?: string) => {
+    let newSeed = forceSeed;
+    if (!newSeed) {
+      const eligibleSeeds = PRESET_SEEDS.filter(s => s !== recsQuery);
+      newSeed = eligibleSeeds.length > 0 
+        ? eligibleSeeds[Math.floor(Math.random() * eligibleSeeds.length)]
+        : PRESET_SEEDS[Math.floor(Math.random() * PRESET_SEEDS.length)];
+    }
+    
+    setRecsQuery(newSeed);
+    fetchGeminiRecommendations(newSeed);
+  };
+
   // Refresh recommendations whenever user visits/navigates back to the 'home' view
   useEffect(() => {
     if (activeView === 'home') {
-      fetchGeminiRecommendations();
+      handleRegenerateSeedAndRecommendations();
     }
   }, [activeView]);
 
@@ -403,6 +441,21 @@ export default function MainContent({
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {onToggleFavorite && (
+                      <button
+                        onClick={() => onToggleFavorite(track.track_id)}
+                        className="p-1 text-neutral-400 hover:text-rose-500 transition-all cursor-pointer mr-0.5"
+                        title={favoriteTrackIds.includes(track.track_id) ? "Remove from Favorites" : "Add to Favorites"}
+                      >
+                        <Heart
+                          className={`w-4 h-4 transition ${
+                            favoriteTrackIds.includes(track.track_id)
+                              ? 'fill-rose-500 text-rose-500'
+                              : 'text-neutral-400 hover:text-rose-500'
+                          }`}
+                        />
+                      </button>
+                    )}
                     {renderAddToPlaylistButton(track)}
                     <button
                       onClick={() => {
@@ -444,11 +497,17 @@ export default function MainContent({
                   type="text"
                   value={recsQuery}
                   onChange={(e) => setRecsQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      fetchGeminiRecommendations(recsQuery);
+                    }
+                  }}
                   placeholder="Seeding tone..."
                   className="bg-neutral-950 text-xs border border-emerald-950 text-neutral-300 rounded-full px-4 py-1.5 w-44 focus:outline-none focus:border-emerald-500 font-sans"
+                  title="Type a seed and press Enter"
                 />
                 <button
-                  onClick={fetchGeminiRecommendations}
+                  onClick={() => handleRegenerateSeedAndRecommendations()}
                   disabled={recsLoading}
                   className="bg-emerald-500 hover:bg-emerald-450 text-black text-xs font-bold px-4 py-1.5 rounded-full transition cursor-pointer flex items-center gap-1.5"
                 >
@@ -708,6 +767,25 @@ export default function MainContent({
                         </div>
 
                         <div className="flex items-center gap-2">
+                          {onToggleFavorite && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(track.track_id);
+                              }}
+                              className="p-1 px-1.5 text-neutral-400 hover:text-rose-500 transition-all cursor-pointer"
+                              title={favoriteTrackIds.includes(track.track_id) ? "Remove from Favorites" : "Add to Favorites"}
+                            >
+                              <Heart
+                                className={`w-4 h-4 transition ${
+                                  favoriteTrackIds.includes(track.track_id)
+                                    ? 'fill-rose-500 text-rose-500'
+                                    : 'text-neutral-400 hover:text-rose-500'
+                                }`}
+                              />
+                            </button>
+                          )}
+
                           <span className="text-[10px] bg-neutral-900 px-2 py-0.5 rounded text-neutral-500 font-mono">
                             {track.genre}
                           </span>
@@ -1096,6 +1174,145 @@ export default function MainContent({
                         </div>
                       ))}
                   </div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* DEDICATED FAVORITE SONGS VIEW */}
+      {activeView === 'favorites' && (
+        <div className="space-y-6 animate-fadeIn">
+          {(() => {
+            const favoriteTracks = tracks.filter(t => favoriteTrackIds.includes(t.track_id));
+
+            return (
+              <>
+                {/* Visual Header */}
+                <div className="flex flex-col sm:flex-row items-end gap-6 bg-gradient-to-r from-rose-900/60 via-purple-950/40 to-transparent p-6 rounded-2xl border border-rose-950/45">
+                  <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl bg-gradient-to-br from-rose-500 to-indigo-600 flex items-center justify-center shadow-2xl relative flex-shrink-0">
+                    <Heart className="w-16 h-16 text-white fill-white animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2 py-0.5 rounded font-mono font-bold tracking-wider block w-fit mb-2">
+                      PLAYLIST
+                    </span>
+                    <h2 className="text-2xl sm:text-5xl font-black tracking-tight text-white mb-2">
+                      Favorite Songs
+                    </h2>
+                    <p className="text-xs text-neutral-400 leading-relaxed font-sans max-w-xl">
+                      Your hand-curated high-fidelity music repository. Click the heart icon on any album cover, search result or playlist item across the application to grow your personal list.
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-2 font-mono">
+                      Owner: <span className="font-semibold text-neutral-300">{currentUser.display_name}</span> • {favoriteTracks.length} records favorited
+                    </p>
+
+                    {favoriteTracks.length > 0 && (
+                      <button
+                        onClick={() => onPlayTrack(favoriteTracks[0], favoriteTracks)}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-6 py-2.5 rounded-full text-xs shadow-lg transition mt-4 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-black text-black" />
+                        Play Favorites
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Table search grid */}
+                <div className="overflow-x-auto pt-2">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-neutral-900 text-neutral-550 font-mono text-[10.5px]">
+                        <th className="py-2.5 px-3 w-8 text-center">#</th>
+                        <th className="py-2.5 px-3">Title</th>
+                        <th className="py-2.5 px-3">Album</th>
+                        <th className="py-2.5 px-3 text-center">Genre</th>
+                        <th className="py-2.5 px-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {favoriteTracks.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-16 text-center text-neutral-500">
+                            <div className="flex flex-col items-center justify-center gap-3">
+                              <Heart className="w-12 h-12 text-neutral-700" />
+                              <p className="text-sm font-semibold text-neutral-400">Your Favorites playlist is empty</p>
+                              <p className="text-xs text-neutral-600 max-w-xs leading-relaxed">
+                                Explore the Home Feed, use Filter & Search, or check recommended tracks. Tap the heart icons to save your preferred records here!
+                              </p>
+                              <button
+                                onClick={() => onSetView('home')}
+                                className="mt-2 text-xs bg-neutral-900 hover:bg-neutral-850 px-4 py-1.5 rounded-full border border-neutral-800 text-white transition font-medium cursor-pointer"
+                              >
+                                Browse Catalogue
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        favoriteTracks.map((track, idx) => {
+                          const isCurrentlyPlayingThis = currentTrack?.track_id === track.track_id;
+
+                          return (
+                            <tr key={track.track_id} className={`border-b border-neutral-900/50 hover:bg-neutral-900/60 transition group ${
+                              isCurrentlyPlayingThis ? 'bg-neutral-950/85' : ''
+                            }`}>
+                              <td className="py-3.5 px-3 text-center text-neutral-500 font-mono">
+                                {isCurrentlyPlayingThis && isPlaying ? (
+                                  <span className="text-emerald-500 font-bold">▶</span>
+                                ) : (
+                                  idx + 1
+                                )}
+                              </td>
+                              <td className="py-3.5 px-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img src={track.artwork_url} alt="art" className="w-8.5 h-8.5 rounded object-cover flex-shrink-0 shadow" />
+                                  <div className="min-w-0">
+                                    <p
+                                      onClick={() => onPlayTrack(track, favoriteTracks)}
+                                      className={`font-semibold cursor-pointer truncate ${
+                                        isCurrentlyPlayingThis ? 'text-emerald-400' : 'text-neutral-200 hover:text-white'
+                                      }`}
+                                    >
+                                      {track.title}
+                                    </p>
+                                    <p className="text-[10px] text-neutral-500 truncate">{track.artist}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-3 text-neutral-450 truncate">{track.album}</td>
+                              <td className="py-3.5 px-3 text-center">
+                                <span className="text-[10px] bg-neutral-900 px-2 py-0.5 rounded text-neutral-500 font-mono uppercase">
+                                  {track.genre}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {onToggleFavorite && (
+                                    <button
+                                      onClick={() => onToggleFavorite(track.track_id)}
+                                      className="p-1.5 text-rose-500 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      title="Remove from Favorites"
+                                    >
+                                      <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => onPlayTrack(track, favoriteTracks)}
+                                    className="p-1 px-2.5 font-bold bg-emerald-500 hover:bg-emerald-450 rounded text-[11px] text-black transition-all cursor-pointer"
+                                  >
+                                    Play
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </>
             );

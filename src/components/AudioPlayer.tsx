@@ -18,7 +18,8 @@ import {
   Disc,
   FileAudio,
   Shuffle,
-  Repeat
+  Repeat,
+  Heart
 } from 'lucide-react';
 import { Track, EqualizerSetting } from '../types';
 import { audioEngine } from '../utils/audioEngine';
@@ -41,6 +42,8 @@ interface AudioPlayerProps {
   isRepeat?: boolean;
   onToggleShuffle?: () => void;
   onToggleRepeat?: () => void;
+  favoriteTrackIds?: string[];
+  onToggleFavorite?: (trackId: string) => void;
 }
 
 export default function AudioPlayer({
@@ -60,7 +63,9 @@ export default function AudioPlayer({
   isShuffle,
   isRepeat,
   onToggleShuffle,
-  onToggleRepeat
+  onToggleRepeat,
+  favoriteTrackIds = [],
+  onToggleFavorite
 }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -310,6 +315,22 @@ export default function AudioPlayer({
                 {currentTrack.artist}
               </p>
             </div>
+
+            {onToggleFavorite && (
+              <button
+                onClick={() => onToggleFavorite(currentTrack.track_id)}
+                className="p-1 px-2 text-neutral-400 hover:text-rose-500 transition-all cursor-pointer flex-shrink-0"
+                title={favoriteTrackIds.includes(currentTrack.track_id) ? "Remove from Favorites" : "Add to Favorites"}
+              >
+                <Heart
+                  className={`w-4 h-4 transition ${
+                    favoriteTrackIds.includes(currentTrack.track_id)
+                      ? 'fill-rose-500 text-rose-500 scale-110'
+                      : 'text-neutral-400 hover:text-rose-500'
+                  }`}
+                />
+              </button>
+            )}
           </>
         ) : (
           <>

@@ -82,6 +82,29 @@ export default function App() {
   // Global lifted search parameters
   const [searchQuery, setSearchQuery] = useState('');
 
+  // User favorite/liked tracks list persistent to localStorage
+  const [favoriteTrackIds, setFavoriteTrackIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('spotify_favorites');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing spotify_favorites init state:', e);
+      }
+    }
+    return [];
+  });
+
+  const handleToggleFavorite = (trackId: string) => {
+    setFavoriteTrackIds((prev) => {
+      const updated = prev.includes(trackId)
+        ? prev.filter((id) => id !== trackId)
+        : [...prev, trackId];
+      localStorage.setItem('spotify_favorites', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Advertisements management for Free Tier listeners
   const [freeTrackCount, setFreeTrackCount] = useState(0);
   const [isAdActive, setIsAdActive] = useState(false);
@@ -781,6 +804,8 @@ export default function App() {
           onDeleteTrack={handleDeleteTrack}
           onUpdateUserTier={handleUpdateUserAdminTier}
           onDeleteUserAccount={handleDeleteUserAdminAccount}
+          favoriteTrackIds={favoriteTrackIds}
+          onToggleFavorite={handleToggleFavorite}
         />
       </div>
 
@@ -804,6 +829,8 @@ export default function App() {
         isRepeat={isRepeat}
         onToggleShuffle={() => setIsShuffle(!isShuffle)}
         onToggleRepeat={() => setIsRepeat(!isRepeat)}
+        favoriteTrackIds={favoriteTrackIds}
+        onToggleFavorite={handleToggleFavorite}
       />
 
       <audio

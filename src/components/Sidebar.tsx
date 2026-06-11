@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Disc,
   Flame,
-  AudioLines
+  AudioLines,
+  Heart
 } from 'lucide-react';
 import { Playlist } from '../types';
 
@@ -84,6 +85,16 @@ export default function Sidebar({
         >
           <Library className="w-5 h-5 text-neutral-300" />
           Your Library
+        </button>
+
+        <button
+          onClick={() => onSetView('favorites')}
+          className={`flex items-center gap-4 py-2 px-3.5 text-sm font-semibold rounded-lg transition-all ${
+            activeView === 'favorites' ? 'bg-neutral-900 text-white shadow font-bold' : 'hover:text-white hover:bg-neutral-950/50'
+          }`}
+        >
+          <Heart className={`w-5 h-5 ${activeView === 'favorites' ? 'text-rose-500 fill-rose-500 animate-pulse' : 'text-[#e11d48]'}`} />
+          <span>Favorite Songs</span>
         </button>
 
         <button
