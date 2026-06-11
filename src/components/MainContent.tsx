@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search as SearchIcon,
   Play,
@@ -238,7 +238,8 @@ export default function MainContent({
         body: JSON.stringify({
           history: historyMeta,
           email: currentUser.email,
-          query: recsQuery
+          query: recsQuery,
+          timestamp: Date.now()
         }),
       });
 
@@ -254,10 +255,22 @@ export default function MainContent({
     }
   };
 
+  // Refresh recommendations whenever user visits/navigates back to the 'home' view
   useEffect(() => {
-    if (activeView === 'home' && geminiRecs.length === 0) {
+    if (activeView === 'home') {
       fetchGeminiRecommendations();
     }
+  }, [activeView]);
+
+  // Periodic automatic refresh every 10 minutes (600,000 ms)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (activeView === 'home') {
+        fetchGeminiRecommendations();
+      }
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, [activeView]);
 
   // Payment mock trigger

@@ -16,7 +16,9 @@ import {
   Cast,
   Check,
   Disc,
-  FileAudio
+  FileAudio,
+  Shuffle,
+  Repeat
 } from 'lucide-react';
 import { Track, EqualizerSetting } from '../types';
 import { audioEngine } from '../utils/audioEngine';
@@ -35,6 +37,10 @@ interface AudioPlayerProps {
   onChangeEqualizer: (eq: EqualizerSetting) => void;
   onImportLocalFile: (file: File) => void;
   isOffline: boolean;
+  isShuffle?: boolean;
+  isRepeat?: boolean;
+  onToggleShuffle?: () => void;
+  onToggleRepeat?: () => void;
 }
 
 export default function AudioPlayer({
@@ -50,13 +56,27 @@ export default function AudioPlayer({
   equalizer,
   onChangeEqualizer,
   onImportLocalFile,
-  isOffline
+  isOffline,
+  isShuffle,
+  isRepeat,
+  onToggleShuffle,
+  onToggleRepeat
 }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
-  const [audioQuality, setAudioQuality] = useState<'128' | '256' | '320' | 'lossless'>('320');
+
+  // Fallback states if not lifting state
+  const [localShuffle, setLocalShuffle] = useState(false);
+  const [localRepeat, setLocalRepeat] = useState(false);
+
+  const shuffleActive = isShuffle !== undefined ? isShuffle : localShuffle;
+  const repeatActive = isRepeat !== undefined ? isRepeat : localRepeat;
+
+  const handleShuffleToggle = onToggleShuffle || (() => setLocalShuffle(!localShuffle));
+  const handleRepeatToggle = onToggleRepeat || (() => setLocalRepeat(!localRepeat));
+
   const [showEqModal, setShowEqModal] = useState(false);
   const [showCastModal, setShowCastModal] = useState(false);
   const [activeCastDevice, setActiveCastDevice] = useState<string | null>(null);
@@ -306,33 +326,60 @@ export default function AudioPlayer({
 
       {/* Primary Transport Timeline controls */}
       <div className="flex flex-col items-center gap-1.5 w-full md:w-2/4">
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={handleShuffleToggle}
+            className={`relative transition p-1.5 cursor-pointer ${
+              shuffleActive ? 'text-emerald-500 hover:text-emerald-400' : 'text-neutral-400 hover:text-white'
+            }`}
+            title={`Shuffle (${shuffleActive ? 'On' : 'Off'})`}
+          >
+            <Shuffle className="w-4.5 h-4.5" />
+            {shuffleActive && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+            )}
+          </button>
+
           <button
             onClick={onPreviousTrack}
-            className="text-neutral-400 hover:text-white transition p-1 cursor-pointer"
+            className="text-neutral-400 hover:text-white transition p-1.5 cursor-pointer"
             title="Previous Track"
           >
-            <SkipBack className="w-5 h-5 " />
+            <SkipBack className="w-5 h-5 fill-current text-current" />
           </button>
 
           <button
             onClick={onTogglePlay}
             disabled={!currentTrack}
-            className={`p-2.5 rounded-full text-black font-bold transition-all transform hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center ${
-              !currentTrack
-                ? 'bg-neutral-800 text-neutral-600'
-                : 'bg-emerald-500 hover:bg-emerald-400'
-            }`}
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 cursor-pointer shadow-xl bg-white text-black disabled:opacity-50 disabled:hover:scale-100 flex-shrink-0`}
+            title={isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? <Pause className="w-5 h-5 fill-black" /> : <Play className="w-5 h-5 fill-black translate-x-0.5" />}
+            {isPlaying ? (
+              <Pause className="w-5 h-5 fill-black text-black" />
+            ) : (
+              <Play className="w-5 h-5 fill-black text-black translate-x-0.5" />
+            )}
           </button>
 
           <button
             onClick={onNextTrack}
-            className="text-neutral-400 hover:text-white transition p-1 cursor-pointer"
+            className="text-neutral-400 hover:text-white transition p-1.5 cursor-pointer"
             title="Next Track"
           >
-            <SkipForward className="w-5 h-5" />
+            <SkipForward className="w-5 h-5 fill-current text-current" />
+          </button>
+
+          <button
+            onClick={handleRepeatToggle}
+            className={`relative transition p-1.5 cursor-pointer ${
+              repeatActive ? 'text-emerald-500 hover:text-emerald-400' : 'text-neutral-400 hover:text-white'
+            }`}
+            title={`Repeat (${repeatActive ? 'On' : 'Off'})`}
+          >
+            <Repeat className="w-4.5 h-4.5" />
+            {repeatActive && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+            )}
           </button>
         </div>
 
@@ -429,25 +476,7 @@ export default function AudioPlayer({
           className="hidden"
         />
 
-        <div className="flex bg-neutral-900 text-[10px] p-0.5 rounded border border-neutral-800">
-          <select
-            value={audioQuality}
-            onChange={(e) => {
-              if (!isPremium && e.target.value !== '128') {
-                alert('High fidelity bitrate options require Premium membership. Reverting to 128 kbps.');
-                setAudioQuality('128');
-              } else {
-                setAudioQuality(e.target.value as any);
-              }
-            }}
-            className="bg-transparent text-neutral-400 rounded px-1.5 focus:outline-none cursor-pointer"
-          >
-            <option value="128">128 kbps (Free)</option>
-            <option value="256">256 kbps (Premium)</option>
-            <option value="320">320 kbps (HQ)</option>
-            <option value="lossless">Lossless FLAC</option>
-          </select>
-        </div>
+
 
         <div className="flex items-center gap-1.5">
           <button

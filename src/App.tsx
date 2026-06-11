@@ -75,6 +75,10 @@ export default function App() {
   // Offline Simulator mode
   const [isOffline, setIsOffline] = useState(false);
 
+  // Shuffle & Repeat playback state
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [isRepeat, setIsRepeat] = useState(false);
+
   // Global lifted search parameters
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -527,7 +531,21 @@ export default function App() {
 
   const handleNextTrack = () => {
     if (playQueue.length === 0 || queueIndex === -1) return;
-    const nextIdx = (queueIndex + 1) % playQueue.length;
+    let nextIdx;
+    if (isShuffle) {
+      if (playQueue.length > 1) {
+        // Find a random index that is different from current index for better variety
+        let randIdx = queueIndex;
+        while (randIdx === queueIndex) {
+          randIdx = Math.floor(Math.random() * playQueue.length);
+        }
+        nextIdx = randIdx;
+      } else {
+        nextIdx = 0;
+      }
+    } else {
+      nextIdx = (queueIndex + 1) % playQueue.length;
+    }
     setQueueIndex(nextIdx);
     handlePlayTrack(playQueue[nextIdx], playQueue);
   };
@@ -601,13 +619,11 @@ export default function App() {
   return (
     <div id="spotify-clone-viewport-root" className="flex flex-col h-screen bg-black overflow-hidden font-sans select-none">
       <header className="h-16 bg-[#000000] border-b border-neutral-900/50 flex items-center justify-between px-6 z-50 flex-shrink-0">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleSetView('home')}>
-          <div className="bg-[#1db954] p-1.5 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-black fill-current">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.377-1.454-5.37-1.783-8.893-.982-.336.075-.668-.135-.744-.47-.077-.337.135-.668.47-.745 3.856-.88 7.15-.51 9.817 1.123.294.18.387.563.207.857zm1.225-2.72c-.227.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.076-1.182-.413.125-.847-.11-1.012-.52-.164-.415.07-.847.521-1.012 3.67-1.114 8.24-.57 11.38 1.363.37.227.49.707.262 1.074.004-.001.004-.001 0 0zM17.91 10.9c-.273.447-.857.595-1.303.32-3.175-1.887-8.412-2.062-11.472-1.135-.503.153-1.03-.133-1.18-.636-.15-.503.136-1.03.638-1.18 3.633-1.1 9.412-.898 13.048 1.26.446.265.594.85.32 1.3-.001.001-.001.001-.02.04l.007.03z"/>
-            </svg>
-          </div>
-          <span className="text-white font-black text-lg tracking-tight font-sans hidden sm:block">Spotify</span>
+        <div className="flex items-center gap-2.5 cursor-pointer hover:opacity-95 transition" onClick={() => handleSetView('home')}>
+          <svg viewBox="0 0 24 24" className="w-8 h-8 text-[#1ED760] fill-current flex-shrink-0">
+            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.564.387-.86.207-2.377-1.454-5.37-1.783-8.893-.98-.336.075-.67-.14-.744-.477-.076-.336.14-.67.477-.744 3.856-.88 7.15-.5 9.81 1.13.297.18.39.563.21.864zm1.223-2.72c-.227.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.075-1.185-.413.125-.847-.11-.972-.523-.125-.413.11-.847.522-.972 3.67-1.114 8.243-.574 11.385 1.36.368.225.485.707.26 1.074zm.104-2.816C14.4 8.788 8.6 8.6 5.253 9.616c-.53.16-1.09-.14-1.25-.67-.16-.53.14-1.09.67-1.25 3.847-1.167 10.25-.95 14.2 1.402.48.285.637.9.35 1.38-.284.48-.9.638-1.38.352z"/>
+          </svg>
+          <span className="text-white font-black text-xl tracking-tight font-sans hidden sm:block">Spotify</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -784,11 +800,16 @@ export default function App() {
         onChangeEqualizer={setEqualizer}
         onImportLocalFile={handleImportLocalFile}
         isOffline={isOffline}
+        isShuffle={isShuffle}
+        isRepeat={isRepeat}
+        onToggleShuffle={() => setIsShuffle(!isShuffle)}
+        onToggleRepeat={() => setIsRepeat(!isRepeat)}
       />
 
       <audio
         ref={audioRef}
         src={audioSrc || undefined}
+        loop={isRepeat}
       />
 
       {isAdActive && (

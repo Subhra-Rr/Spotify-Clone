@@ -1014,17 +1014,19 @@ apiRouter.get('/search', async (req, res) => {
 
 // Personalized AI Recommendations Endpoint using @google/genai
 apiRouter.post('/recommendations', async (req, res) => {
-  const { history, email, query } = req.body;
+  const { history, email, query, timestamp } = req.body;
   const historyString = (history && history.length > 0)
     ? history.map((h: any) => `"${h.title}" by ${h.artist}`).join(', ')
     : 'no listening history yet';
 
-  const todayStr = new Date().toDateString();
-  const dayOfWeek = new Date().getDay();
+  const timeDate = timestamp ? new Date(timestamp) : new Date();
+  const todayStr = timeDate.toDateString();
+  const timeStr = timeDate.toLocaleTimeString();
+  const dayOfWeek = timeDate.getDay();
 
-  // Explicitly prompt Gemini with the current date to naturally vary recommendations daily
-  const prompt = `Based on the current date: [${todayStr}], user listening history: [${historyString}] and seed preference query: "${query || 'Focus & Relax'}",
-generate exactly 4 song recommendations suitable for today. Ensure they differ from typical recommendations and explore high-fidelity tracks. Customize the reason why they will love each track. Return them in JSON format matching the requested schema.`;
+  // Explicitly prompt Gemini with the current date/time to naturally vary recommendations dynamically
+  const prompt = `Based on the current date and time: [${todayStr} ${timeStr}], user listening history: [${historyString}] and seed preference query: "${query || 'Focus & Relax'}",
+generate exactly 4 song recommendations suitable for this hour of the day. Ensure they differ from typical recommendations and explore high-fidelity tracks. Customize the reason why they will love each track today. Return them in JSON format matching the requested schema.`;
 
   try {
     const aiResponse = await ai.models.generateContent({
@@ -1100,9 +1102,17 @@ generate exactly 4 song recommendations suitable for today. Ensure they differ f
       ]
     };
 
-    // Fallback to the current day of the week
-    const mockRecs = fallbackRegistryByDay[dayOfWeek] || fallbackRegistryByDay[0];
-    res.json({ recommendations: mockRecs, fallback: true, day: dayOfWeek });
+    // Fallback to the current day of the week, shifted periodically by the hour to vary selection
+    const baseRecs = fallbackRegistryByDay[dayOfWeek] || fallbackRegistryByDay[0];
+    const hour = timeDate.getHours();
+    const rotatedRecs = [...baseRecs];
+    for (let k = 0; k < (hour % rotatedRecs.length); k++) {
+      const first = rotatedRecs.shift();
+      if (first) {
+        rotatedRecs.push(first);
+      }
+    }
+    res.json({ recommendations: rotatedRecs, fallback: true, day: dayOfWeek });
   }
 });
 
