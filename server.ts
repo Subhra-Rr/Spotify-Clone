@@ -558,13 +558,16 @@ function getArtistImage(artistName: string): string | null {
   return null;
 }
 
+let POPULAR_SONGS_REGISTRY: any[] = [];
+
 // Dynamic AI-powered Global search endpoint using @google/genai
 function generateProceduralTracks(query: string): any[] {
   const q = query.toLowerCase().trim();
   let artistName = 'Spotify Choice';
   let tracksData: Array<{ title: string; artist?: string; album: string; genre: string; release_year: number; lyrics: string }> = [];
 
-  const POPULAR_SONGS_REGISTRY = [
+  if (POPULAR_SONGS_REGISTRY.length === 0) {
+    POPULAR_SONGS_REGISTRY = [
     { title: "Blank Space", artist: "Taylor Swift", album: "1989", genre: "Pop", release_year: 2014, lyrics: "[00:00] Nice to meet you, where you been?\n[00:15] I could show you incredible things...\n[00:30] Magic, madness, heaven, sin" },
     { title: "Cruel Summer", artist: "Taylor Swift", album: "Lover", genre: "Pop", release_year: 2019, lyrics: "[00:00] Fever dream high in the quiet of the night\n[00:15] You know that I caught it...\n[00:30] My bad, bad boy, shiny toy with a price" },
     { title: "Shake It Off", artist: "Taylor Swift", album: "1989", genre: "Pop", release_year: 2014, lyrics: "[00:00] I stay out too late, got nothing in my brain..." },
@@ -737,7 +740,8 @@ function generateProceduralTracks(query: string): any[] {
     { title: "Midnight Shadows", artist: "The Groovy Rebels", album: "Rebel Beats", genre: "Hip Hop", release_year: 2026, lyrics: "[00:00] Yeah, check it, midnight casting long shadows..." },
     { title: "After Midnight", artist: "The Groovy Rebels", album: "Rebel Beats", genre: "Hip Hop", release_year: 2026, lyrics: "[00:00] After midnight, the real ones emerge..." },
     { title: "Autumn Leaves", artist: "The Acoustic Trio", album: "Woodland Tales", genre: "Acoustic / Folk", release_year: 2025, lyrics: "[00:00] Simple chords on an acoustic guitar..." }
-  ];
+    ];
+  }
 
   // 1. Check exact registry title matches
   const exactRegistryMatch = POPULAR_SONGS_REGISTRY.filter(song => 
@@ -1056,63 +1060,64 @@ generate exactly 4 song recommendations suitable for this hour of the day. Ensur
     // Graceful event logging without error keywords to prevent platform flagging
     console.log('Operational info: Loaded local rotating recommendation cards');
 
-    // Robust 7-day deterministically rotating list depending on the day of the week
-    const fallbackRegistryByDay: Record<number, Array<{ title: string; artist: string; genre: string; reason: string }>> = {
-      0: [ // Sunday
-        { title: 'Sunday Acoustic Sunrise', artist: 'The Acoustic Trio', genre: 'Acoustic / Folk', reason: 'A beautiful soulful start to your Sunday morning with premium organic strings.' },
-        { title: 'Warm Sunset Meditation', artist: 'Sufi Qawwali Chants', genre: 'Devotional / Sufi', reason: 'Relax your Sunday mind with therapeutic classical ambient frequencies.' },
-        { title: 'Lag Jaa Gale (Classic)', artist: 'Lata Mangeshkar', genre: 'Classic Romantic', reason: 'Unmatched vintage bliss to melt into an active weekend wind-down.' },
-        { title: 'Ocean Eyes (Acoustic)', artist: 'Lila Sterling', genre: 'Pop', reason: 'Warmly aligned with a peaceful Sunday afternoon mood.' }
-      ],
-      1: [ // Monday
-        { title: 'Syntax Hustle Beats', artist: 'Daft Pixel', genre: 'Electronic / Focus', reason: 'Get into the working flow of Monday with high-tempo high-fidelity synth patterns.' },
-        { title: 'Cyberpunk Code Drive', artist: 'Synth Master J', genre: 'Electronic', reason: 'An upbeat driving synthesizer anthem built for Monday nocturnal programming flows.' },
-        { title: 'Stan (Premium Fit)', artist: 'Eminem', genre: 'Hip Hop', reason: 'Deep, engaging lyricism to fuel your Monday morning determination.' },
-        { title: 'Midnight Shadows', artist: 'The Groovy Rebels', genre: 'Hip Hop / Rap', reason: 'Deep nocturnal bass lines perfect for tackling Monday backlogs.' }
-      ],
-      2: [ // Tuesday
-        { title: 'Starry Nocturne', artist: 'Lila Sterling & Synth Master J', genre: 'Ambient Pop', reason: 'Beautifully tracks your interest in atmospheric melodies with a fresh synthwave layer.' },
-        { title: 'Deep Focus Instrumental', artist: 'Daft Pixel', genre: 'Synthwave', reason: 'Keep focus on Tuesday with highly precise rhythms and lush pads.' },
-        { title: 'After Midnight', artist: 'The Groovy Rebels', genre: 'Hip Hop / Lo-Fi', reason: 'Mellow grooves to guide you through Tuesday evening tasks.' },
-        { title: 'Symphony No. 5', artist: 'Ludwig van Beethoven', genre: 'Classical', reason: 'Complex symphonic patterns to ignite analytical brain connections on Tuesday.' }
-      ],
-      3: [ // Wednesday
-        { title: 'Midweek Acoustic Horizon', artist: 'The Acoustic Trio', genre: 'Acoustic / Folk', reason: 'A light, refreshing Wednesday melodic pick to get over the mid-week hump.' },
-        { title: 'Kesariya (Unplugged)', artist: 'Arijit Singh', genre: 'Bollywood Pop', reason: 'A warm romantic blend and acoustic progression to soothe your Wednesday evening.' },
-        { title: 'Blinding Lights', artist: 'The Weeknd', genre: 'Pop / Synthwave', reason: 'High energy beat waves to power you through your mid-week sprints.' },
-        { title: 'Sunflower (Acoustic)', artist: 'Post Malone', genre: 'Hip Hop / Pop', reason: 'Sunny, bright vibrations to keep things highly positive and focused.' }
-      ],
-      4: [ // Thursday
-        { title: 'Retro Synth Revival', artist: 'Daft Pixel', genre: 'Electronic', reason: 'Throwback to the analog retro era for a thoughtful Thursday nostalgic session.' },
-        { title: 'Mere Sapno Ki Rani (Classic)', artist: 'Kishore Kumar', genre: 'Bollywood Retro', reason: 'Upbeat retro rhythm and hums to make your Thursday light-hearted.' },
-        { title: 'Yellow (Remastered)', artist: 'Coldplay', genre: 'Alternative Rock', reason: 'Nostalgic, warm stadium rock chords suited perfectly for Thursday afternoon.' },
-        { title: 'Fading Summer', artist: 'Lila Sterling', genre: 'Pop', reason: 'A crisp nostalgic melody looking forward to the end of the busy week.' }
-      ],
-      5: [ // Friday
-        { title: 'Friday Night Club Drive', artist: 'Daft Pixel', genre: 'Electronic / Bass', reason: 'Step into the weekend with premium high-fidelity dance drops and thick synth stabs.' },
-        { title: 'Hotline Bling (Remix)', artist: 'Drake', genre: 'Hip Hop', reason: 'Rhythmic Friday party starter to transition you smoothly from work to play.' },
-        { title: 'Dynamite (High-Fidelity)', artist: 'BTS', genre: 'K-Pop', reason: 'Super bright, ultra-energetic vibes to celebrate the arrival of Friday night!' },
-        { title: 'Espresso (Friday Edition)', artist: 'Sabrina Carpenter', genre: 'Pop', reason: 'Keep the weekend energy high and bubbly with this modern pop smash.' }
-      ],
-      6: [ // Saturday
-        { title: 'Saturday Coffee Shop Jazz', artist: 'The Acoustic Trio', genre: 'Acoustic / Folk', reason: 'Cozy acoustic guitar sounds to accompany a slow Saturday cup of coffee.' },
-        { title: 'Weekend Coastal Breeze', artist: 'Lila Sterling', genre: 'Pop', reason: 'Atmospheric light-pop layers designed for a carefree Saturday excursion.' },
-        { title: 'Love Story (Country Acoustic)', artist: 'Taylor Swift', genre: 'Country Pop', reason: 'Sing along to historical songwriting melodies on a beautiful Saturday afternoon.' },
-        { title: 'Kun Faya Kun (Sufi)', artist: 'Sufi Qawwali Chants', genre: 'Devotional / Sufi', reason: 'Enriching spiritual depth to cleanse your mind and restore energy over the weekend.' }
-      ]
+    if (POPULAR_SONGS_REGISTRY.length === 0) {
+      generateProceduralTracks('');
+    }
+
+    // Match based on query words to prioritize similar songs in the fallback list
+    const queryWords = (query || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    let matchedTracks = POPULAR_SONGS_REGISTRY.filter(song => {
+      const titleLower = song.title.toLowerCase();
+      const artistLower = (song.artist || '').toLowerCase();
+      const genreLower = (song.genre || '').toLowerCase();
+      const albumLower = (song.album || '').toLowerCase();
+      return queryWords.some(word => 
+        titleLower.includes(word) ||
+        artistLower.includes(word) ||
+        genreLower.includes(word) ||
+        albumLower.includes(word)
+      );
+    });
+
+    // Shuffle helper function to ensure extreme randomness on every single click
+    const shuffleArray = (arr: any[]) => {
+      const clone = [...arr];
+      for (let i = clone.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [clone[i], clone[j]] = [clone[j], clone[i]];
+      }
+      return clone;
     };
 
-    // Fallback to the current day of the week, shifted periodically by the hour to vary selection
-    const baseRecs = fallbackRegistryByDay[dayOfWeek] || fallbackRegistryByDay[0];
-    const hour = timeDate.getHours();
-    const rotatedRecs = [...baseRecs];
-    for (let k = 0; k < (hour % rotatedRecs.length); k++) {
-      const first = rotatedRecs.shift();
-      if (first) {
-        rotatedRecs.push(first);
+    matchedTracks = shuffleArray(matchedTracks);
+
+    // Get 4 tracks. If we have less than 4 matching keyword tracks, fill remaining with random songs
+    const selectedTracks: any[] = matchedTracks.slice(0, 4);
+    if (selectedTracks.length < 4) {
+      const remainingPool = shuffleArray(
+        POPULAR_SONGS_REGISTRY.filter(song => !selectedTracks.some(st => st.title === song.title))
+      );
+      while (selectedTracks.length < 4 && remainingPool.length > 0) {
+        selectedTracks.push(remainingPool.pop());
       }
     }
-    res.json({ recommendations: rotatedRecs, fallback: true, day: dayOfWeek });
+
+    // Map selected tracks onto the schema with a creative, dynamic explanation aligning with the seed query!
+    const generatedReasons = [
+      `A magnificent track whose energy level fits your "${query || 'Focus & Relax'}" vibe perfectly.`,
+      `Lush atmosphere and high-fidelity production, custom-matched for your "${query || 'Modern Beats'}" session.`,
+      `Renowned for its incredible progression, this adds a fresh and creative angle to your "${query || 'Nocturnal Studio'}" mood.`,
+      `An exceptional listening choice handpicked dynamically to elevate your current "${query || 'Acoustic Escape'}" mindset today.`
+    ];
+
+    const finalRecommendations = selectedTracks.map((song, idx) => ({
+      title: song.title,
+      artist: song.artist || 'Legendary Musician',
+      genre: song.genre || 'Global Sound',
+      reason: generatedReasons[idx] || `Specifically curated today to match your requested "${query}" music tone.`
+    }));
+
+    res.json({ recommendations: finalRecommendations, fallback: true });
   }
 });
 

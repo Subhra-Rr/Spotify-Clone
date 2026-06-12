@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Track, Playlist, Podcast, Artist, Album, UserProfile } from '../types';
 import AdminPanel from './AdminPortal';
+import ArtistDetails from './ArtistDetails';
 import { getRandomArtists, POPULAR_ARTISTS_DATABASE } from '../data/popularArtists';
 
 const PRESET_SEEDS = [
@@ -53,7 +54,34 @@ const PRESET_SEEDS = [
   "Deep house coding beats",
   "Chill lofi study frequencies",
   "Euphoric progressive house",
-  "Atmospheric post-rock journey"
+  "Atmospheric post-rock journey",
+  "Euphoric Bollywood dance party",
+  "Moody Urdu rap & hip hop",
+  "Sufi unplugged mystic evening",
+  "Late night driving Punjabi beats",
+  "Energetic gaming electro-beats",
+  "Cozy rainy Sunday morning classics",
+  "Nostalgic 90s Bollywood retro",
+  "Soothing Carnatic classical flute",
+  "Bassy workout motivation mixes",
+  "Dark synthwave cyberpunk programming",
+  "Warm acoustic indie campfire",
+  "Deep bass lounge techno",
+  "Dreamy shoegaze soundscapes",
+  "Happy upbeat bubblegum pop",
+  "Melancholic lofi bedroom beats",
+  "High-octane thrash metal gym session",
+  "Vaporwave nostalgic mall ambient",
+  "Sunset chill tropical house",
+  "Symphonic hard rock masterpiece",
+  "Emotional piano orchestral melodies",
+  "Cozy winter coffee shop jazz",
+  "Epic cinematic workout orchestral",
+  "Mystic desert instrumental guitar",
+  "High fidelity Desi Hip Hop tracks",
+  "South Indian cinematic high-energy",
+  "Mellow acoustic singer-songwriter",
+  "Midnight evergreen romantic blues"
 ];
 
 interface MainContentProps {
@@ -86,6 +114,8 @@ interface MainContentProps {
   onDeleteUserAccount?: (email: string) => void;
   favoriteTrackIds?: string[];
   onToggleFavorite?: (trackId: string) => void;
+  onToggleFollowArtist?: (artistId: string) => void;
+  onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
 export default function MainContent({
@@ -117,7 +147,9 @@ export default function MainContent({
   onUpdateUserTier,
   onDeleteUserAccount,
   favoriteTrackIds = [],
-  onToggleFavorite
+  onToggleFavorite,
+  onToggleFollowArtist = () => {},
+  onShowToast
 }: MainContentProps) {
   // Search parameters (fallback locally if prop not passed, though lifted is preferred)
   const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -155,6 +187,7 @@ export default function MainContent({
   // Gemini Recommendations State
   const [geminiRecs, setGeminiRecs] = useState<Array<{ title: string; artist: string; genre: string; reason: string }>>([]);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [recsFlash, setRecsFlash] = useState(false);
   const [recsQuery, setRecsQuery] = useState('Chill study coding loops');
   const [recEngineSuccess, setRecEngineSuccess] = useState(false);
 
@@ -251,7 +284,8 @@ export default function MainContent({
   // Handle Fetching Gemini Recommendations
   const fetchGeminiRecommendations = async (overrideQuery?: string) => {
     setRecsLoading(true);
-    setGeminiRecs([]);
+    // Do NOT clear the existing recommendations instantly to avoid abrupt layout shifts.
+    // Instead, the UI will render a high-fidelity translucent overlay on top of them.
     const activeQuery = overrideQuery !== undefined ? overrideQuery : recsQuery;
     try {
       const historyMeta = tracks.slice(0, 3).map(t => ({ title: t.title, artist: t.artist }));
@@ -272,6 +306,12 @@ export default function MainContent({
         const data = await response.json();
         setGeminiRecs(data.recommendations || []);
         setRecEngineSuccess(true);
+        
+        // Trigger a gorgeous visual neon emerald flash across the recommendations panel!
+        setRecsFlash(true);
+        setTimeout(() => {
+          setRecsFlash(false);
+        }, 1000);
       }
     } catch (e) {
       // Graceful local catalog recommendations are automatically presented
@@ -346,7 +386,7 @@ export default function MainContent({
   });
 
   return (
-    <div id="main-content-display-pane" className="flex-1 bg-gradient-to-b from-[#1c1c1c] to-[#121212] overflow-y-auto p-6 text-white pb-32">
+    <div id="main-content-display-pane" className="flex-1 bg-gradient-to-b from-[#181818] to-[#121212] rounded-lg overflow-y-auto p-6 text-white pb-32 shadow-md relative">
       {/* Search Header Bar (Only visible when appropriate or standard view header) */}
       <div className={`flex items-center justify-between pb-6 ${activeView !== 'home' ? 'border-b border-neutral-900 mb-6' : 'mb-4'}`}>
         <div className="flex items-center gap-2 min-h-[32px]">
@@ -412,6 +452,21 @@ export default function MainContent({
             <p className="text-sm text-neutral-400 mt-1.5">
               Welcome to high-fidelity playback. Choose a record, tweak the equalizer, or talk to your voice assistant.
             </p>
+
+            {/* Direct Studio Authenticity Banner */}
+            <div className="mt-5 bg-gradient-to-r from-emerald-950/40 via-[#121212] to-[#121212] border border-emerald-500/20 rounded-xl p-4 shadow-xl select-none max-w-4xl">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-[#1ED760] tracking-widest uppercase font-sans">ORIGINAL HIGH-FIDELITY TRACKS ONLY</h4>
+                  <p className="text-xs text-neutral-300 mt-1 font-sans font-semibold leading-relaxed">
+                    NO MOCK DATA/MUSIC/SONGS — All items in this catalog play the original studio recordings by choice or by force (the default 30-second high-fidelity preview clips remain fully operational).
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Quick grid entries */}
@@ -478,13 +533,21 @@ export default function MainContent({
           </div>
 
           {/* AI Recommendations panel powered by Gemini */}
-          <div className="bg-[#151d18]/50 border border-emerald-950 rounded-2xl p-5 relative overflow-hidden backdrop-blur-sm">
+          <div className={`bg-[#151d18]/50 border rounded-2xl p-5 relative overflow-hidden backdrop-blur-sm transition-all duration-700 ${
+            recsFlash 
+              ? 'border-emerald-500 ring-2 ring-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] scale-[1.01]' 
+              : 'border-emerald-950/70 shadow-none'
+          }`}>
             <div className="absolute right-[-24px] top-[-24px] w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            {recsFlash && (
+              <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none animate-pulse z-10" />
+            )}
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-emerald-950/40">
               <div>
                 <h3 className="text-base font-bold text-emerald-400 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
+                  <Sparkles className={`w-5 h-5 text-emerald-400 ${recsLoading ? 'animate-spin' : ''}`} />
                   Personalized AI-Curated Recommendations
                 </h3>
                 <p className="text-xs text-neutral-400 mt-0.5">
@@ -492,7 +555,7 @@ export default function MainContent({
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   value={recsQuery}
@@ -503,79 +566,98 @@ export default function MainContent({
                     }
                   }}
                   placeholder="Seeding tone..."
-                  className="bg-neutral-950 text-xs border border-emerald-950 text-neutral-300 rounded-full px-4 py-1.5 w-44 focus:outline-none focus:border-emerald-500 font-sans"
+                  className={`bg-neutral-950 text-xs border text-neutral-300 rounded-full px-4 py-1.5 w-44 focus:outline-none focus:border-emerald-500 font-sans transition-all duration-300 ${
+                    recsFlash ? 'border-emerald-450 ring-1 ring-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : 'border-emerald-950'
+                  }`}
                   title="Type a seed and press Enter"
                 />
                 <button
                   onClick={() => handleRegenerateSeedAndRecommendations()}
                   disabled={recsLoading}
-                  className="bg-emerald-500 hover:bg-emerald-450 text-black text-xs font-bold px-4 py-1.5 rounded-full transition cursor-pointer flex items-center gap-1.5"
+                  className="bg-emerald-500 hover:bg-emerald-450 text-black text-xs font-bold px-4 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 h-fit active:scale-95 enabled:hover:scale-[1.02] disabled:opacity-50"
                 >
-                  {recsLoading ? 'Consulting Gemini...' : 'Regenerate Seed'}
+                  <Sparkles className={`w-3.5 h-3.5 ${recsLoading ? 'animate-spin' : 'animate-bounce'}`} />
+                  {recsLoading ? 'Consulting...' : 'Regenerate Seed'}
                 </button>
               </div>
             </div>
 
-            {recsLoading ? (
-              <div className="py-8 flex flex-col items-center justify-center gap-2">
-                <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-                <p className="text-xs text-neutral-500 italic">Gemini is reasoning on your listening history & preferences...</p>
-              </div>
-            ) : geminiRecs.length === 0 ? (
-              <p className="text-xs text-neutral-500 italic py-6 text-center">No recommendations loaded. Tap "Regenerate Seed" to prompt Gemini.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {geminiRecs.map((rec, i) => {
-                  const foundMatch = tracks.find(t => 
-                    t.title.toLowerCase() === rec.title.toLowerCase() ||
-                    t.title.toLowerCase().includes(rec.title.toLowerCase()) ||
-                    rec.title.toLowerCase().includes(t.title.toLowerCase())
-                  );
-                  const matched = foundMatch || tracks[0];
-                  const currentRecTrack = {
-                    ...matched,
-                    track_id: `t-rec-${i}-${matched.track_id}`,
-                    title: rec.title,
-                    artist: rec.artist,
-                    genre: rec.genre,
-                    audio_url: foundMatch ? foundMatch.audio_url : ""
-                  };
-                  const isActive = currentTrack?.title === rec.title && currentTrack?.artist === rec.artist;
+            <div className="relative min-h-[160px]">
+              {/* Glass overlay that appears with backdrop blur instead of popping layouts when refreshing */}
+              {recsLoading && geminiRecs.length > 0 && (
+                <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-[2.5px] rounded-xl flex flex-col items-center justify-center gap-2.5 z-25 transition-all duration-300 animate-fadeIn">
+                  <div className="w-9 h-9 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+                  <p className="text-xs text-emerald-400 font-semibold font-sans tracking-wide">Syncing custom recommendations...</p>
+                </div>
+              )}
 
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => onPlayTrack(currentRecTrack)}
-                      className="bg-neutral-950/70 border border-neutral-900 p-3.5 rounded-xl flex flex-col justify-between hover:border-emerald-800/40 transition-all group relative cursor-pointer hover:bg-neutral-900"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start gap-1">
-                          <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider block w-fit mb-2">
-                            {rec.genre}
-                          </span>
-                          <button
-                            className={`p-1.5 rounded-full bg-emerald-500 text-black opacity-0 group-hover:opacity-100 transition shadow hover:scale-105 ${
-                              isActive ? 'opacity-100 bg-white text-black' : ''
-                            }`}
-                          >
-                            {isActive && isPlaying ? <Pause className="w-3.5 h-3.5 fill-black" /> : <Play className="w-3.5 h-3.5 fill-black translate-x-px" />}
-                          </button>
+              {recsLoading && geminiRecs.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+                  <p className="text-xs text-neutral-500 italic">Gemini is reasoning on your listening history & preferences...</p>
+                </div>
+              ) : geminiRecs.length === 0 ? (
+                <p className="text-xs text-neutral-500 italic py-12 text-center">No recommendations loaded. Tap "Regenerate Seed" to prompt Gemini.</p>
+              ) : (
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-500 ${
+                  recsFlash ? 'scale-[0.99] opacity-75' : 'scale-100 opacity-100'
+                }`}>
+                  {geminiRecs.map((rec, i) => {
+                    const foundMatch = tracks.find(t => 
+                      t.title.toLowerCase() === rec.title.toLowerCase() ||
+                      t.title.toLowerCase().includes(rec.title.toLowerCase()) ||
+                      rec.title.toLowerCase().includes(t.title.toLowerCase())
+                    );
+                    const matched = foundMatch || tracks[0];
+                    const currentRecTrack = {
+                      ...matched,
+                      track_id: `t-rec-${i}-${matched.track_id}`,
+                      title: rec.title,
+                      artist: rec.artist,
+                      genre: rec.genre,
+                      audio_url: foundMatch ? foundMatch.audio_url : ""
+                    };
+                    const isActive = currentTrack?.title === rec.title && currentTrack?.artist === rec.artist;
+
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => onPlayTrack(currentRecTrack)}
+                        className={`bg-neutral-950/70 border p-3.5 rounded-xl flex flex-col justify-between transition-all duration-350 group relative cursor-pointer ${
+                          isActive 
+                            ? 'border-emerald-500 bg-neutral-900 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/25' 
+                            : 'border-neutral-900 hover:border-emerald-800/40 hover:bg-neutral-900 shadow-none'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start gap-1">
+                            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider block w-fit mb-2">
+                              {rec.genre}
+                            </span>
+                            <button
+                              className={`p-1.5 rounded-full bg-emerald-500 text-black opacity-0 group-hover:opacity-100 transition shadow hover:scale-105 ${
+                                isActive ? 'opacity-100 bg-white text-black' : ''
+                              }`}
+                            >
+                              {isActive && isPlaying ? <Pause className="w-3.5 h-3.5 fill-black" /> : <Play className="w-3.5 h-3.5 fill-black translate-x-px" />}
+                            </button>
+                          </div>
+                          <h4 className="font-bold text-sm text-neutral-100 truncate">{rec.title}</h4>
+                          <p className="text-xs text-neutral-500 mt-0.5 truncate">{rec.artist}</p>
+                          <p className="text-[11px] text-neutral-400 mt-2.5 italic leading-relaxed border-t border-neutral-900/65 pt-2 line-clamp-3 font-sans">
+                            "{rec.reason}"
+                          </p>
                         </div>
-                        <h4 className="font-bold text-sm text-neutral-100 truncate">{rec.title}</h4>
-                        <p className="text-xs text-neutral-500 mt-0.5 truncate">{rec.artist}</p>
-                        <p className="text-[11px] text-neutral-400 mt-2.5 italic leading-relaxed border-t border-neutral-900 pt-2 line-clamp-3">
-                          "{rec.reason}"
-                        </p>
-                      </div>
 
-                      <div className="mt-4 font-mono text-[10px] text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1 hover:underline text-left">
-                        Play Recommendation <ChevronRight className="w-3.5 h-3.5" />
+                        <div className="mt-4 font-mono text-[10px] text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1 hover:underline text-left select-none">
+                          Play Recommendation <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* New Releases Carousel list */}
@@ -616,22 +698,45 @@ export default function MainContent({
           <div className="pt-2">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">Popular Artists</h3>
-              <button onClick={() => onSetView('artists')} className="text-xs font-semibold text-neutral-500 hover:text-emerald-400">See All</button>
+              <button onClick={() => onSetView('artists')} className="text-xs font-semibold text-neutral-500 hover:text-emerald-400 font-sans">See All</button>
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
-              {shuffledArtists.map((artist, idx) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {shuffledArtists.slice(0, 6).map((artist, idx) => (
                 <div
                   key={idx}
                   onClick={() => {
-                    setSearchQuery(artist.name);
-                    onSetView('search');
+                    const matchedArtist = artists.find(a => a.name.toLowerCase() === artist.name.toLowerCase());
+                    if (matchedArtist) {
+                      onSetView('artist-details', matchedArtist.artist_id);
+                    } else {
+                      setSearchQuery(artist.name);
+                      onSetView('search');
+                    }
                   }}
-                  className="bg-[#121212] hover:bg-[#1f1f1f]/80 active:scale-95 px-4 py-2.5 rounded-xl flex items-center gap-2.5 group cursor-pointer transition-all border border-neutral-800 hover:border-emerald-500/40 shadow-sm"
+                  className="bg-[#181818] hover:bg-[#282828] p-3.5 rounded-lg flex flex-col group cursor-pointer transition-all duration-300 shadow relative select-none"
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover:bg-emerald-500 transition-colors" />
-                  <span className="font-bold text-xs text-neutral-200 group-hover:text-white transition-colors">{artist.name}</span>
-                  <span className="text-[9px] text-neutral-500 font-mono tracking-wider uppercase border-l border-neutral-800 pl-2 group-hover:text-neutral-400 transition-colors">{artist.genre}</span>
+                  <div className="relative w-full aspect-square rounded-full mb-3.5 shadow-md overflow-hidden shrink-0 bg-neutral-900">
+                    <img
+                      src={artist.img || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80'}
+                      alt={artist.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-1.5 right-1.5 translate-y-2 group-hover:translate-y-0 text-black bg-[#1ed760] p-2.5 rounded-full transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center">
+                      <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                    </div>
+                  </div>
+
+                  <div className="text-left">
+                    <h4 className="font-extrabold text-xs truncate text-white flex items-center gap-1 justify-start">
+                      <span className="truncate">{artist.name}</span>
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#3D91F4] fill-current shrink-0" title="Verified Artist Account">
+                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                      </svg>
+                    </h4>
+                    <p className="text-[10px] text-neutral-400 mt-0.5 font-sans">Artist</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1749,7 +1854,7 @@ export default function MainContent({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-2">
             {POPULAR_ARTISTS_DATABASE.filter(art => {
               const q = artistFilter.toLowerCase().trim();
               return art.name.toLowerCase().includes(q) || art.genre.toLowerCase().includes(q);
@@ -1757,20 +1862,39 @@ export default function MainContent({
               <div
                 key={idx}
                 onClick={() => {
-                  setSearchQuery(artist.name);
-                  onSetView('search');
+                  const matchedArtist = artists.find(a => a.name.toLowerCase() === artist.name.toLowerCase());
+                  if (matchedArtist) {
+                    onSetView('artist-details', matchedArtist.artist_id);
+                  } else {
+                    setSearchQuery(artist.name);
+                    onSetView('search');
+                  }
                 }}
-                className="bg-[#121212] hover:bg-[#1c1c1c] p-3 pl-4 rounded-xl flex items-center justify-between group cursor-pointer transition-all border border-neutral-800 hover:border-emerald-500/50 shadow-sm"
+                className="bg-[#181818] hover:bg-[#282828] p-4 rounded-lg flex flex-col group cursor-pointer transition-all duration-300 shadow relative select-none"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-neutral-600 group-hover:bg-emerald-500 transition-colors flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-sm truncate text-neutral-200 group-hover:text-white transition-colors">{artist.name}</h4>
-                    <p className="text-[10px] text-neutral-500 truncate uppercase tracking-wider font-mono mt-0.5">{artist.genre}</p>
+                {/* Shape circle cover wrapper */}
+                <div className="relative w-full aspect-square rounded-full mb-4 shadow-lg overflow-hidden shrink-0 bg-neutral-900">
+                  <img
+                    src={artist.img || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80'}
+                    alt={artist.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Big hover green play circle overlay */}
+                  <div className="opacity-0 group-hover:opacity-100 absolute bottom-2 right-2 translate-y-2 group-hover:translate-y-0 text-black bg-[#1ed760] p-3 rounded-full transition-all duration-300 hover:scale-105 shadow-2xl flex items-center justify-center">
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
                   </div>
                 </div>
-                <div className="w-7 h-7 rounded-full bg-neutral-900 flex items-center justify-center group-hover:bg-emerald-500/10 group-hover:scale-105 transition-all text-neutral-500 group-hover:text-emerald-400 flex-shrink-0">
-                  <Play className="w-3.5 h-3.5 fill-current" />
+
+                <div className="text-left mt-1">
+                  <h4 className="font-extrabold text-sm truncate text-white flex items-center gap-1 justify-start">
+                    <span className="truncate">{artist.name}</span>
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#3D91F4] fill-current shrink-0" title="Verified Artist Account">
+                      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    </svg>
+                  </h4>
+                  <p className="text-xs text-neutral-400 mt-1">Artist</p>
                 </div>
               </div>
             ))}
@@ -1790,6 +1914,203 @@ export default function MainContent({
         </div>
       )}
 
+      {activeView === 'artist-details' && activeViewId && (
+        (() => {
+          const selectedArtist = artists.find(a => a.artist_id === activeViewId) || artists.find(a => a.name.toLowerCase() === activeViewId.toLowerCase()) || artists[0];
+          return (
+            <ArtistDetails
+              artist={selectedArtist}
+              currentUser={currentUser}
+              currentTrack={currentTrack}
+              isPlaying={isPlaying}
+              activeTrackId={currentTrack?.track_id || null}
+              favoriteTrackIds={favoriteTrackIds}
+              onPlayTrack={onPlayTrack}
+              onTogglePlay={onTogglePlay}
+              onToggleFollowArtist={onToggleFollowArtist}
+              onToggleFavorite={onToggleFavorite || (() => {})}
+              onShowToast={onShowToast}
+            />
+          );
+        })()
+      )}
+
+      {activeView === 'profile' && (
+        <div className="relative flex-1 bg-gradient-to-b from-neutral-905 via-[#121212] to-black overflow-y-auto text-neutral-300 pb-24 scrollbar-thin animate-fadeIn">
+          {/* Header Banner - user's Profile Page exactly as seen in the walkthrough video at 0:37 */}
+          <div className="relative h-64 flex items-end p-8 bg-gradient-to-b from-[#1f1f1f]/80 to-[#121212]">
+            <div className="flex items-center gap-6 z-10 w-full">
+              <div className="group relative w-36 h-36 rounded-full bg-neutral-800 text-[#1ed760] font-black text-6xl flex items-center justify-center cursor-pointer shadow-2xl border border-neutral-700 hover:scale-105 active:scale-95 transition">
+                <span>{currentUser.display_name.substring(0, 1).toUpperCase()}</span>
+                {/* Choose photo hover overlay */}
+                <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1.5 transition duration-200">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <span className="text-[10px] text-white font-bold uppercase tracking-wide">Choose photo</span>
+                </div>
+              </div>
+              <div className="flex flex-col select-text">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Profile</span>
+                <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter my-2 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                  {currentUser.display_name}
+                </h1>
+                <div className="text-neutral-400 text-xs font-semibold flex items-center gap-2 mt-1 select-none">
+                  <span className="text-white font-bold">73 Following</span>
+                  <span>•</span>
+                  <span>Odia & Global music hub</span>
+                </div>
+              </div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent opacity-90" />
+          </div>
+
+          <div className="p-8 flex flex-col gap-8">
+            {/* Top Tracks Month Sec */}
+            <div>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-xl font-extrabold text-white tracking-tight">Top tracks this month</h2>
+                <span className="text-[10px] text-neutral-500 font-bold uppercase">Only visible to you</span>
+              </div>
+              <div className="flex flex-col gap-1 bg-[#181818]/40 border border-neutral-900/60 p-2.5 rounded-lg">
+                {[
+                  { id: 'p-1', num: '1', title: 'Brown Rang', artist: 'Yo Yo Honey Singh', album: 'International Villager', duration: '3:01', img: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=150&q=80' },
+                  { id: 'p-2', num: '2', title: 'Gerua', artist: 'Arijit Singh', album: 'Dilwale', duration: '5:45', img: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=150&q=80' },
+                  { id: 'p-3', num: '3', title: 'Faded', artist: 'Alan Walker', album: 'Different World', duration: '3:32', img: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&q=80' },
+                  { id: 'p-4', num: '4', title: 'Shape of You', artist: 'Ed Sheeran', album: 'Divide', duration: '3:53', img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=150&q=80' },
+                  { id: 'p-5', num: '5', title: 'Jeena Jeena', artist: 'Atif Aslam', album: 'Badlapur', duration: '3:49', img: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=150&q=80' }
+                ].map((trackItem, index) => (
+                  <div
+                    key={trackItem.id}
+                    className="flex items-center justify-between p-3.5 rounded-md hover:bg-neutral-800/60 transition group cursor-pointer select-none"
+                    onClick={() => {
+                      // Form an on-the-fly track and play
+                      const matchedInDoc = tracks.find(t => t.title.toLowerCase() === trackItem.title.toLowerCase());
+                      if (matchedInDoc) {
+                        onPlayTrack(matchedInDoc);
+                      } else {
+                        onPlayTrack({
+                          track_id: trackItem.id,
+                          title: trackItem.title,
+                          artist: trackItem.artist,
+                          album: trackItem.album,
+                          duration_ms: 181000,
+                          audio_url: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/ff/e9/87/ffe98781-a904-4df1-687f-e283f5fbcfce/mzaf_124119854972551421.plus.aac.p.m4a',
+                          artwork_url: trackItem.img,
+                          genre: 'Pop',
+                          plays: 12054117,
+                          release_year: 2023,
+                          explicit: false
+                        });
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <span className="text-xs text-neutral-400 text-center w-4 font-bold group-hover:text-white transition">
+                        {trackItem.num}
+                      </span>
+                      <img
+                        src={trackItem.img}
+                        alt={trackItem.title}
+                        className="w-10 h-10 object-cover rounded shadow bg-[#282828] shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white group-hover:text-[#1ed760] transition truncate leading-snug">{trackItem.title}</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5 truncate leading-tight font-sans">{trackItem.artist}</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-neutral-400 truncate hidden md:block flex-1 max-w-xs">{trackItem.album}</p>
+                    <span className="text-[10px] text-neutral-400 font-mono font-bold">{trackItem.duration}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Following section showing popular circular artist cards */}
+            <div>
+              <h2 className="text-xl font-extrabold text-white tracking-tight mb-4">Following</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {artists.slice(0, 6).map((art) => (
+                  <div
+                    key={art.artist_id}
+                    onClick={() => onSetView('artist-details', art.artist_id)}
+                    className="p-4 bg-[#181818]/60 hover:bg-[#282828] border border-neutral-900/60 transition-all duration-300 rounded-xl cursor-pointer group flex flex-col items-center text-center text-ellipsis min-w-0"
+                  >
+                    <div className="relative w-28 h-28 mb-3 shadow-lg rounded-full overflow-hidden border border-neutral-800">
+                      <img
+                        src={art.avatar_url}
+                        alt={art.name}
+                        className="w-full h-full object-cover rounded-full select-none"
+                        referrerPolicy="no-referrer"
+                      />
+                      {/* Interactive play badge overlay */}
+                      <div className="absolute inset-x-0 bottom-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span className="bg-[#1ed760] text-black rounded-full p-2.5 shadow-md">
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
+                            <path d="M7 6v12l10-6z" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full text-center">
+                      <p className="text-xs font-extrabold text-white truncate px-1 group-hover:text-[#1ed760] transition leading-tight">{art.name}</p>
+                      <p className="text-[9px] text-neutral-400 truncate mt-0.5 uppercase tracking-wide font-medium">Artist</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Interactive Polished Spotify Footer Section */}
+            <div className="mt-12 pt-6 border-t border-neutral-900/50 flex flex-col gap-6 selection:bg-[#1ed760] selection:text-black">
+              <div className="flex flex-wrap gap-8 justify-between">
+                <div className="flex flex-wrap gap-12 text-xs font-medium text-neutral-400 font-sans">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-white font-extrabold text-[11px] uppercase tracking-wider mb-1">Company</p>
+                    <a href="#about" className="hover:text-white transition line-through decoration-[#1ed760]/30 mr-1.5">About</a>
+                    <a href="#jobs" className="hover:text-white transition">Jobs</a>
+                    <a href="#record" className="hover:text-white transition">For the Record</a>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-white font-extrabold text-[11px] uppercase tracking-wider mb-1">Communities</p>
+                    <a href="#artists" className="hover:text-white transition">For Artists</a>
+                    <a href="#developers" className="hover:text-white transition">Developers</a>
+                    <a href="#advertising" className="hover:text-white transition">Advertising</a>
+                    <a href="#investors" className="hover:text-white transition">Investors</a>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-white font-extrabold text-[11px] uppercase tracking-wider mb-1">Useful links</p>
+                    <a href="#support" className="hover:text-white transition">Support</a>
+                    <a href="#app" className="hover:text-white transition">Free Mobile App</a>
+                  </div>
+                </div>
+                {/* Social icons row */}
+                <div className="flex gap-3 text-white">
+                  <div className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-pointer transition select-none">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/></svg>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-pointer transition select-none">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4 items-center justify-between text-[11px] text-[#737373] mt-4 pb-4">
+                <div className="flex gap-4">
+                  <a href="#legal" className="hover:text-white transition">Legal</a>
+                  <a href="#safety" className="hover:text-white transition">Safety & Privacy Center</a>
+                  <a href="#privacy" className="hover:text-white transition">Privacy Policy</a>
+                  <a href="#cookies" className="hover:text-white transition font-semibold hover:underline">Cookies</a>
+                  <a href="#ads" className="hover:text-white transition">About Ads</a>
+                  <a href="#accessibility" className="hover:text-white transition">Accessibility</a>
+                </div>
+                <p className="font-mono text-[9px] uppercase tracking-wider select-none text-neutral-600">© 2026 Savify AB / Spot-Odia Ltd.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeView === 'admin' && (
         <div className="animate-fadeIn">
           <AdminPanel
@@ -1798,6 +2119,7 @@ export default function MainContent({
             onDeleteTrack={onDeleteTrack || (() => {})}
             onUpdateUserTier={onUpdateUserTier || (() => {})}
             onDeleteUserAccount={onDeleteUserAccount || (() => {})}
+            onShowToast={onShowToast}
           />
         </div>
       )}

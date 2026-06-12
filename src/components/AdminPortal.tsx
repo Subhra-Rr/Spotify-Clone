@@ -8,6 +8,7 @@ interface AdminPanelProps {
   onDeleteTrack: (trackId: string) => void;
   onUpdateUserTier: (email: string, tier: 'free' | 'premium') => void;
   onDeleteUserAccount: (email: string) => void;
+  onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
 export default function AdminPanel({
@@ -15,7 +16,8 @@ export default function AdminPanel({
   onIngestTrack,
   onDeleteTrack,
   onUpdateUserTier,
-  onDeleteUserAccount
+  onDeleteUserAccount,
+  onShowToast
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'catalog' | 'users'>('catalog');
 
@@ -23,7 +25,7 @@ export default function AdminPanel({
   const [newTrack, setNewTrack] = useState({
     title: '',
     artist: '',
-    audio_url: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3', // reliable demo stream fallback
+    audio_url: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/71/5c/80/715c80fc-ebe4-e713-487c-5bdefee6c6f3/mzaf_3698387428135478316.plus.aac.p.m4a', // reliable demo stream fallback
     artwork_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300',
     genre: 'Electronic',
     lyrics: ''
@@ -39,7 +41,11 @@ export default function AdminPanel({
   const handleSubmitTrack = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTrack.title || !newTrack.artist) {
-      alert('Please fill in both Title and Artist fields.');
+      if (onShowToast) {
+        onShowToast('Please fill in both Title and Artist fields.', 'error');
+      } else {
+        alert('Please fill in both Title and Artist fields.');
+      }
       return;
     }
 
@@ -64,7 +70,7 @@ export default function AdminPanel({
     setNewTrack({
       title: '',
       artist: '',
-      audio_url: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
+      audio_url: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/71/5c/80/715c80fc-ebe4-e713-487c-5bdefee6c6f3/mzaf_3698387428135478316.plus.aac.p.m4a',
       artwork_url: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300',
       genre: 'Electronic',
       lyrics: ''

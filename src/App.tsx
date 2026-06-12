@@ -10,6 +10,7 @@ import { Track, Playlist, Podcast, Artist, Album, UserProfile, EqualizerSetting,
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import AudioPlayer from './components/AudioPlayer';
+import NowPlayingSidebar from './components/NowPlayingSidebar';
 import AuthModal from './components/AuthModal';
 import { audioEngine } from './utils/audioEngine';
 import { WifiOff, ShieldAlert, Search, Download, Home } from 'lucide-react';
@@ -18,6 +19,16 @@ export default function App() {
   // Global Navigation layout
   const [activeView, setActiveView] = useState('home');
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+
+  // Dynamic Spotify style Toast State
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'info' | 'warning' | 'error' }>>([]);
+  const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
 
   // DB Sync state
   const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
@@ -40,11 +51,11 @@ export default function App() {
     }
     return {
       id: 'u-1',
-      email: 'demo@user.com',
-      display_name: 'Guest',
-      dob: '2006-05-15',
+      email: 'sdsabat2006@gmail.com',
+      display_name: 'Subhradeet Sabat',
+      dob: '2006-12-08',
       country: 'India',
-      tier: 'free',
+      tier: 'premium',
       offlineDownloads: [],
       collaborativePlaylists: [],
       followedArtists: []
@@ -56,6 +67,9 @@ export default function App() {
   // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
+
+  const [showTopProfileDropdown, setShowTopProfileDropdown] = useState(false);
+  const [showTopSearchSuggestions, setShowTopSearchSuggestions] = useState(false);
 
   // Player transport state
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -163,6 +177,28 @@ export default function App() {
     syncServerData();
   }, []);
 
+  const VERIFIED_PREVIEW_RESOURCES = [
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/bf/25/7f/bf257f86-cfcc-883a-cd43-98fe87e7f607/mzaf_1384029104829302194.plus.aac.p.m4a", // Boom Shaka
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d6/59/2b/d6592b0b-1e7e-4743-b2e4-f2af038fd783/mzaf_7697277787797935735.plus.aac.p.m4a", // ocean eyes
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/71/5c/80/715c80fc-ebe4-e713-487c-5bdefee6c6f3/mzaf_3698387428135478316.plus.aac.p.m4a", // Midnight City
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/7d/38/ff/7d38ff16-b52c-063a-a34d-767e836befcc/mzaf_13413071545825673354.plus.aac.p.m4a", // Without Me
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/00/b3/f2/00b3f2a0-3228-b65f-7189-91eb26f5adf6/mzaf_3535055549125623460.plus.aac.p.m4a", // cardigan
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/3f/a0/ba/3fa0ba5b-088d-bcf2-e4bd-355a5d505617/mzaf_3355567893400963384.plus.aac.p.m4a", // Starry Nocturne
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/29/e2/68/29e26874-ed3c-49f1-1fcc-cf7a3e5cde17/mzaf_14514475775303545273.plus.aac.p.m4a", // Deep Focus
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/62/0c/72/620c72ac-f370-0de6-2a0d-831f6d2d26f3/mzaf_9090450490088600113.plus.aac.p.m4a", // Sunset vibe
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e9/4d/02/e94d0230-11ee-ef94-d2cf-a5d547bd73f4/mzaf_554140808559155562.plus.aac.p.m4a", // After Midnight
+    "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/62/0a/a5/620aa56f-189e-708a-80f0-cebdada3872e/mzaf_7131619873177773332.plus.aac.p.m4a"  // Autumn Leaves
+  ];
+
+  const getImmediateBackupUrl = (track: any): string => {
+    let hash = 0;
+    const combo = (track.title || "") + (track.artist || "");
+    for (let i = 0; i < combo.length; i++) {
+      hash = combo.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return VERIFIED_PREVIEW_RESOURCES[Math.abs(hash) % VERIFIED_PREVIEW_RESOURCES.length];
+  };
+
   const [resolvedAudioUrl, setResolvedAudioUrl] = useState<string | null>(null);
 
   const audioSrc = currentTrack ? (
@@ -171,8 +207,8 @@ export default function App() {
      currentTrack.podcast_title || 
      currentTrack.audio_url?.includes('itunes.apple.com') ||
      currentTrack.audio_url?.includes('audio-ssl'))
-      ? currentTrack.audio_url 
-      : resolvedAudioUrl || currentTrack.audio_url
+      ? (currentTrack.audio_url || getImmediateBackupUrl(currentTrack))
+      : (resolvedAudioUrl || currentTrack.audio_url || getImmediateBackupUrl(currentTrack))
   ) : null;
 
   // Dynamic original track resolver using iTunes Search API. This is the "fix it once and for all" solution!
@@ -190,7 +226,7 @@ export default function App() {
       currentTrack.audio_url?.includes('itunes.apple.com') ||
       currentTrack.audio_url?.includes('audio-ssl')
     ) {
-      setResolvedAudioUrl(currentTrack.audio_url);
+      setResolvedAudioUrl(currentTrack.audio_url || getImmediateBackupUrl(currentTrack));
       return;
     }
 
@@ -199,7 +235,8 @@ export default function App() {
     const resolveOriginalSong = async () => {
       try {
         const cleanTitle = currentTrack.title.replace(/\(Simulated\)/gi, '').trim();
-        const searchQuery = `${currentTrack.artist} ${cleanTitle}`;
+        const mainArtist = currentTrack.artist.split(/, | & | feat\. | and /i)[0]?.trim() || '';
+        const searchQuery = `${mainArtist} ${cleanTitle}`;
         // Query up to 10 candidates to perform a multi-match selection instead of blindly taking limit=1
         const searchUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=10`;
         
@@ -214,9 +251,11 @@ export default function App() {
               const itemArtist = (item.artistName || '').toLowerCase();
               const reqTitle = cleanTitle.toLowerCase();
               const reqArtist = currentTrack.artist.toLowerCase();
+              const reqMainArtist = mainArtist.toLowerCase();
 
               const titleMatch = itemTitle.includes(reqTitle) || reqTitle.includes(itemTitle);
-              const artistMatch = itemArtist.includes(reqArtist) || reqArtist.includes(itemArtist);
+              const artistMatch = itemArtist.includes(reqMainArtist) || reqMainArtist.includes(itemArtist) ||
+                                  itemArtist.includes(reqArtist) || reqArtist.includes(itemArtist);
 
               // Token-overlap check for complex phrases
               const getWords = (str: string) => 
@@ -246,22 +285,7 @@ export default function App() {
 
       // Default fallback - play a high-fidelity lo-fi beat for simulated/procedural tracks to avoid random songs
       if (isSubscribed) {
-        if (!currentTrack.audio_url) {
-          const fallbackLofis = [
-            'https://raw.githubusercontent.com/Anand-Chowdhary/lofi-player/master/assets/music/1.mp3',
-            'https://raw.githubusercontent.com/Anand-Chowdhary/lofi-player/master/assets/music/2.mp3',
-            'https://raw.githubusercontent.com/Anand-Chowdhary/lofi-player/master/assets/music/4.mp3'
-          ];
-          let hash = 0;
-          const combo = currentTrack.title + currentTrack.artist;
-          for (let i = 0; i < combo.length; i++) {
-            hash = combo.charCodeAt(i) + ((hash << 5) - hash);
-          }
-          const chosenLofi = fallbackLofis[Math.abs(hash) % fallbackLofis.length];
-          setResolvedAudioUrl(chosenLofi);
-        } else {
-          setResolvedAudioUrl(currentTrack.audio_url);
-        }
+        setResolvedAudioUrl(currentTrack.audio_url || getImmediateBackupUrl(currentTrack));
       }
     };
 
@@ -278,6 +302,8 @@ export default function App() {
     if (!audio) return;
 
     if (isPlaying && audioSrc) {
+      // Force refreshing the source elements safely without audio codec exceptions
+      audio.load();
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
@@ -330,7 +356,7 @@ export default function App() {
         });
 
         if (res.ok) {
-          alert(`Successfully imported and uploaded "${file.name}" to cloud playlist!`);
+          showToast(`Successfully imported and uploaded "${file.name}" to cloud playlist!`, 'success');
           syncServerData();
         }
       } catch (e) {
@@ -464,6 +490,34 @@ export default function App() {
     }
   };
 
+  const handleToggleFollowArtist = (artistId: string) => {
+    setCurrentUser(prevUser => {
+      const followed = prevUser.followedArtists || [];
+      const updatedFollowing = followed.includes(artistId)
+        ? followed.filter(id => id !== artistId)
+        : [...followed, artistId];
+      const updatedUser = { ...prevUser, followedArtists: updatedFollowing };
+      localStorage.setItem('spotify_user', JSON.stringify(updatedUser));
+      
+      fetch('/api/auth/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: prevUser.email,
+          mobile: prevUser.mobile,
+          googleId: prevUser.googleId,
+          display_name: prevUser.display_name,
+          dob: prevUser.dob,
+          country: prevUser.country,
+          tier: prevUser.tier,
+          followedArtists: updatedFollowing
+        })
+      }).catch(e => console.error(e));
+
+      return updatedUser;
+    });
+  };
+
   const handleTopSearchChange = (query: string) => {
     setSearchQuery(query);
     if (query.trim().length > 0 && activeView !== 'search') {
@@ -485,7 +539,7 @@ export default function App() {
         })
       });
       if (res.ok) {
-        alert(`Successfully ingested metadata for "${trackPayload.title}".`);
+        showToast(`Successfully ingested metadata for "${trackPayload.title}".`, 'success');
         syncServerData();
       }
     } catch (e) {
@@ -499,11 +553,11 @@ export default function App() {
         method: 'DELETE'
       });
       if (res.ok) {
-        alert('Selected track deregistered successfully from cluster index.');
+        showToast('Selected track deregistered successfully.', 'info');
         syncServerData();
       } else {
         setTracks(prev => prev.filter(t => t.track_id !== trackId));
-        alert('Track removed from local runtime cache.');
+        showToast('Track removed from local runtime cache.', 'info');
       }
     } catch (e) {
       console.error(e);
@@ -514,18 +568,18 @@ export default function App() {
     if (email === currentUser.email) {
       handleUpdateUserProfile(currentUser.display_name, currentUser.dob, currentUser.country, tier);
     } else {
-      alert(`User access tier matching ${email} updated to ${tier} status in directory registry.`);
+      showToast(`User access tier matching ${email} updated to ${tier} status in directory registry.`, 'success');
     }
   };
 
   const handleDeleteUserAdminAccount = (email: string) => {
-    alert(`Account registration matching ${email} has been suspended inside access database.`);
+    showToast(`Account registration matching ${email} has been suspended inside access database.`, 'warning');
   };
 
   const handlePlayTrack = (track: Track, customQueue: Track[] = []) => {
     audioEngine.resume();
     if (isOffline && !currentUser.offlineDownloads.includes(track.track_id) && !track.isLocal) {
-      alert('This track is only available to stream online. Reconnect to Internet or select offline downloaded tracks.');
+      showToast('This track is only available to stream online. Reconnect to Internet or select offline downloaded tracks.', 'warning');
       return;
     }
 
@@ -617,7 +671,7 @@ export default function App() {
     else if (cmd === 'play-track-name' && arg) {
       const match = tracks.find(t => t.title.toLowerCase().includes(arg.toLowerCase()));
       if (match) handlePlayTrack(match);
-      else alert(`Song "${arg}" not found in database.`);
+      else showToast(`Song "${arg}" not found in database.`, 'error');
     } else if (cmd === 'search' && arg) setActiveView('search');
     else if (cmd === 'volume' && arg) {
       const audio = audioRef.current;
@@ -665,13 +719,21 @@ export default function App() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => handleTopSearchChange(e.target.value)}
+              onChange={(e) => {
+                handleTopSearchChange(e.target.value);
+                setShowTopSearchSuggestions(true);
+              }}
+              onFocus={() => setShowTopSearchSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowTopSearchSuggestions(false), 250)}
               placeholder="What do you want to play?"
               className="bg-[#1f1f1f] hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] focus:ring-2 focus:ring-white text-white text-xs font-semibold rounded-full py-2.5 pl-11 pr-24 w-64 md:w-80 lg:w-[450px] transition-all outline-none border-none placeholder-neutral-500 shadow-inner"
             />
             {searchQuery ? (
               <button
-                onClick={() => handleTopSearchChange('')}
+                onClick={() => {
+                  handleTopSearchChange('');
+                  setShowTopSearchSuggestions(false);
+                }}
                 className="absolute right-4 text-[10px] uppercase font-bold text-neutral-400 hover:text-white cursor-pointer font-mono"
               >
                 Clear
@@ -680,6 +742,145 @@ export default function App() {
               <span className="absolute right-4 text-[9px] uppercase font-bold font-mono tracking-widest text-[#10b981] select-none">
                 AI Enabled
               </span>
+            )}
+
+            {/* Premium Autocomplete/Search suggest dropdown - matched precisely to Bilal Saeed walkthrough in video */}
+            {showTopSearchSuggestions && (
+              <div 
+                onMouseDown={(e) => e.preventDefault()}
+                className="absolute top-12 left-0 w-full bg-[#121212] border border-neutral-800 rounded-lg p-2.5 z-50 shadow-2xl text-neutral-200 text-xs font-semibold flex flex-col gap-1.5 max-h-96 overflow-y-auto"
+              >
+                {!searchQuery ? (
+                  <>
+                    <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold px-2 py-1 select-none font-sans uppercase tracking-wider">
+                      <span>Recent searches</span>
+                      <button 
+                        onClick={() => handleTopSearchChange('')}
+                        className="hover:text-white transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        handleTopSearchChange("No Cap");
+                        handleSetView("search");
+                        setShowTopSearchSuggestions(false);
+                      }}
+                      className="flex items-center gap-3 p-1.5 hover:bg-neutral-800 rounded-md text-left transition select-none"
+                    >
+                      <Search className="w-4 h-4 text-neutral-400" />
+                      <div>
+                        <p className="font-bold text-white text-xs">No Cap</p>
+                        <p className="text-[10px] text-neutral-400">Song • KR$NA</p>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleSetView("artist-details", "artist-atif-aslam");
+                        setShowTopSearchSuggestions(false);
+                      }}
+                      className="flex items-center gap-3 p-1.5 hover:bg-neutral-800 rounded-md text-left transition select-none"
+                    >
+                      <Search className="w-4 h-4 text-neutral-500" />
+                      <div>
+                        <p className="font-bold text-white text-xs">Atif Aslam</p>
+                        <p className="text-[10px] text-neutral-400">Artist</p>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleTopSearchChange("Aadat");
+                        handleSetView("search");
+                        setShowTopSearchSuggestions(false);
+                      }}
+                      className="flex items-center gap-3 p-1.5 hover:bg-neutral-800 rounded-md text-left transition select-none"
+                    >
+                      <Search className="w-4 h-4 text-neutral-500" />
+                      <div>
+                        <p className="font-bold text-white text-xs">Aadat - From "Kalyug"</p>
+                        <p className="text-[10px] text-neutral-400">Song • Atif Aslam, Jal, Mithoon</p>
+                      </div>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[9px] text-[#1ed760] font-mono tracking-wider px-2 py-0.5 uppercase select-none">
+                      Autocomplete Candidates
+                    </div>
+                    <button 
+                      onClick={() => {
+                        handleTopSearchChange(`${searchQuery} all songs`);
+                        handleSetView("search");
+                        setShowTopSearchSuggestions(false);
+                      }}
+                      className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-neutral-800 text-left rounded-md transition font-bold"
+                    >
+                      <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span className="truncate">{searchQuery} all songs</span>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleTopSearchChange(`${searchQuery} sad song`);
+                        handleSetView("search");
+                        setShowTopSearchSuggestions(false);
+                      }}
+                      className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-neutral-800 text-left rounded-md transition font-bold"
+                    >
+                      <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                      <span className="truncate">{searchQuery} sad song</span>
+                    </button>
+
+                    {/* Filter artists list matching input query */}
+                    {artists.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).map(artist => (
+                      <button
+                        key={artist.artist_id}
+                        onClick={() => {
+                          handleSetView('artist-details', artist.artist_id);
+                          setShowTopSearchSuggestions(false);
+                        }}
+                        className="flex items-center gap-3 p-2 bg-neutral-900/40 hover:bg-neutral-800 rounded-md text-left transition-all border border-neutral-900 border-none select-none"
+                      >
+                        <img 
+                          src={artist.avatar_url} 
+                          alt={artist.name} 
+                          className="w-8 h-8 rounded-full object-cover shrink-0 bg-stone-800"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-white text-xs truncate leading-tight">{artist.name}</p>
+                          <p className="text-[10px] text-neutral-400 truncate mt-0.5">Artist</p>
+                        </div>
+                        <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-3 py-1 rounded-full text-neutral-300">Artist Profile</span>
+                      </button>
+                    ))}
+
+                    {/* Filter tracks list matching query */}
+                    {tracks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()) || t.artist.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 4).map(track => (
+                      <button
+                        key={track.track_id}
+                        onClick={() => {
+                          handlePlayTrack(track);
+                          setShowTopSearchSuggestions(false);
+                        }}
+                        className="flex items-center gap-3 p-1.5 hover:bg-neutral-800 rounded-md text-left transition select-none"
+                      >
+                        <img 
+                          src={track.artwork_url} 
+                          alt={track.title} 
+                          className="w-8 h-8 rounded object-cover shrink-0 bg-stone-800"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-white text-xs truncate leading-tight">{track.title}</p>
+                          <p className="text-[10px] text-neutral-400 truncate mt-0.5">{track.artist}</p>
+                        </div>
+                        <span className="text-[10px] text-neutral-500 font-mono shrink-0 mr-1 select-none">Song</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -692,7 +893,7 @@ export default function App() {
             Premium
           </button>
           <button
-            onClick={() => alert('Download starting for Windows/macOS client bundle...')}
+            onClick={() => showToast('Download starting for Windows/macOS client bundle...', 'info')}
             className="text-neutral-400 hover:text-white font-bold text-xs tracking-wide transition hidden lg:flex items-center gap-1.5"
           >
             <Download className="w-3.5 h-3.5" />
@@ -724,44 +925,139 @@ export default function App() {
               </button>
             </>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-bold text-neutral-300">
-                  Hi, <span className="text-emerald-400 font-extrabold">{currentUser.display_name}</span>
-                </span>
-                {currentUser.tier === 'premium' && (
-                  <span className="text-[9px] font-black text-emerald-400 tracking-widest font-mono uppercase mt-0.5 leading-none">
-                    PRO
-                  </span>
-                )}
-              </div>
+            <div className="relative flex items-center gap-3">
+              {/* Premium Pill button */}
               <button
-                onClick={() => {
-                  const defaultUser: UserProfile = {
-                    id: 'u-1',
-                    email: 'demo@user.com',
-                    display_name: 'Guest',
-                    dob: '2006-05-15',
-                    country: 'India',
-                    tier: 'free',
-                    offlineDownloads: [],
-                    collaborativePlaylists: [],
-                    followedArtists: []
-                  };
-                  setCurrentUser(defaultUser);
-                  localStorage.removeItem('spotify_user');
-                  alert('Logged out successfully.');
-                }}
-                className="bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold py-1.5 px-4 rounded-full transition cursor-pointer"
+                onClick={() => handleSetView('settings')}
+                className="bg-[#1f1f1f]/80 hover:bg-black/90 hover:scale-105 border border-neutral-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-full transition cursor-pointer"
               >
-                Logout
+                Explore Premium
               </button>
+
+              {/* Install App button */}
+              <button
+                onClick={() => showToast('Spotify Desktop container starting download...', 'info')}
+                className="bg-[#1f1f1f]/80 hover:bg-black/90 hover:scale-105 border border-neutral-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-full transition hidden sm:flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Install App
+              </button>
+
+              {/* Avatar circle toggle trigger */}
+              <button
+                onClick={() => setShowTopProfileDropdown(!showTopProfileDropdown)}
+                onBlur={() => setTimeout(() => setShowTopProfileDropdown(false), 250)}
+                className="w-8 h-8 rounded-full bg-[#282828] hover:scale-105 text-[#1ed760] font-black text-xs flex items-center justify-center cursor-pointer transition border border-neutral-800 focus:ring-2 focus:ring-white"
+                title="User profile menu"
+              >
+                {currentUser.display_name.substring(0, 1).toUpperCase()}
+              </button>
+
+              {/* Interactive Profile Dropdown Card */}
+              {showTopProfileDropdown && (
+                <div 
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="absolute right-0 top-10 w-48 bg-[#181818] border border-neutral-800 p-1 rounded-md shadow-2xl z-50 text-neutral-200 text-xs font-bold flex flex-col gap-0.5 animate-fadeIn"
+                >
+                  <a
+                    href="#account"
+                    onClick={() => {
+                      handleSetView('settings');
+                      setShowTopProfileDropdown(false);
+                    }}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition text-neutral-200 hover:text-white"
+                  >
+                    <span>Account</span>
+                    <svg className="w-3 h-3 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <button
+                    onClick={() => {
+                      handleSetView('profile');
+                      setShowTopProfileDropdown(false);
+                    }}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition w-full text-left font-bold text-neutral-200 hover:text-white"
+                  >
+                    <span>Profile</span>
+                  </button>
+                  <a
+                    href="#upgrade"
+                    onClick={() => {
+                      handleSetView('settings');
+                      setShowTopProfileDropdown(false);
+                    }}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition text-neutral-200 hover:text-white"
+                  >
+                    <span>Upgrade to Premium</span>
+                    <svg className="w-3 h-3 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <a
+                    href="#support"
+                    onClick={() => showToast('Redirecting to support ticket portal...', 'info')}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition text-neutral-200 hover:text-white"
+                  >
+                    <span>Support</span>
+                    <svg className="w-3 h-3 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <button
+                    onClick={() => showToast('Starting desktop installer download...', 'info')}
+                    className="px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition w-full font-bold text-neutral-200 hover:text-white"
+                  >
+                    Download
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleSetView('settings');
+                      setShowTopProfileDropdown(false);
+                    }}
+                    className="px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition w-full font-bold text-neutral-200 hover:text-white"
+                  >
+                    Settings
+                  </button>
+                  <div className="h-px bg-neutral-800 my-1" />
+                  <button
+                    onClick={() => {
+                      const defaultUser: UserProfile = {
+                        id: 'u-1',
+                        email: 'demo@user.com',
+                        display_name: 'Guest',
+                        dob: '2006-05-15',
+                        country: 'India',
+                        tier: 'free',
+                        offlineDownloads: [],
+                        collaborativePlaylists: [],
+                        followedArtists: []
+                      };
+                      setCurrentUser(defaultUser);
+                      localStorage.removeItem('spotify_user');
+                      setShowTopProfileDropdown(false);
+                      showToast('Logged out successfully.', 'info');
+                    }}
+                    className="px-3 py-2 hover:bg-neutral-800 rounded-sm text-left transition w-full text-neutral-400 hover:text-white font-semibold"
+                  >
+                    Log out
+                  </button>
+
+                  {/* "Your Updates" block exactly as shown in the walkthrough video */}
+                  <div className="bg-neutral-900 border border-neutral-800/80 m-1.5 p-2 rounded text-[10px] text-neutral-400 font-medium font-sans">
+                    <p className="font-extrabold text-[#1ed760] mb-0.5 flex items-center gap-1">
+                      <span>●</span> Your Updates
+                    </p>
+                    <p className="leading-snug">Say hello to your updates. Check here for your followers, playlists, and news.</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden p-2 gap-2 bg-[#000000]">
         <Sidebar
           activeView={activeView}
           activeViewId={activeViewId}
@@ -774,6 +1070,7 @@ export default function App() {
           isAdmin={true} 
           onVoiceCommand={handleVoiceCommand}
           activeTrackTitle={currentTrack ? currentTrack.title : ''}
+          artists={artists}
         />
 
         <MainContent
@@ -806,6 +1103,21 @@ export default function App() {
           onDeleteUserAccount={handleDeleteUserAdminAccount}
           favoriteTrackIds={favoriteTrackIds}
           onToggleFavorite={handleToggleFavorite}
+          onToggleFollowArtist={handleToggleFollowArtist}
+          onShowToast={showToast}
+        />
+
+        <NowPlayingSidebar
+          currentTrack={currentTrack}
+          isPlaying={isPlaying}
+          currentUser={currentUser}
+          playQueue={playQueue}
+          queueIndex={queueIndex}
+          onToggleFollowArtist={handleToggleFollowArtist}
+          onPlayTrack={handlePlayTrack}
+          onSetView={handleSetView}
+          artists={artists}
+          onShowToast={showToast}
         />
       </div>
 
@@ -831,6 +1143,7 @@ export default function App() {
         onToggleRepeat={() => setIsRepeat(!isRepeat)}
         favoriteTrackIds={favoriteTrackIds}
         onToggleFavorite={handleToggleFavorite}
+        onShowToast={showToast}
       />
 
       <audio
@@ -853,7 +1166,7 @@ export default function App() {
             onClick={() => {
               setIsAdActive(false);
               handleUpdateUserProfile(currentUser.display_name, currentUser.dob, currentUser.country, 'premium');
-              alert('Upgraded to premium! Playback has resumed ad-free.');
+              showToast('Upgraded to premium! Playback has resumed ad-free.', 'success');
             }}
             className="mt-8 bg-emerald-500 hover:bg-emerald-450 text-black py-2.5 px-6 rounded-full font-bold text-xs shadow-lg transition"
           >
@@ -882,6 +1195,29 @@ export default function App() {
           localStorage.setItem('spotify_user', JSON.stringify(user));
         }}
       />
+
+      {/* Floating dynamic Spotify Style Toast list */}
+      <div className="fixed bottom-28 right-6 flex flex-col gap-2 z-55 pointer-events-none">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-2xl text-xs font-bold flex items-center gap-2 border animate-fadeIn transition-all transform hover:scale-102 pointer-events-auto ${
+              toast.type === 'error'
+                ? 'bg-[#ffebee]/10 backdrop-blur border-red-500/20 text-red-400'
+                : toast.type === 'warning'
+                ? 'bg-[#fff8e1]/10 backdrop-blur border-amber-500/20 text-amber-400'
+                : 'bg-[#e8f5e9]/10 backdrop-blur border-emerald-500/20 text-[#1ed760]'
+            }`}
+            style={{
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
+              borderLeftWidth: '4px',
+              borderLeftColor: toast.type === 'error' ? '#ef4444' : toast.type === 'warning' ? '#f59e0b' : '#1ed760'
+            }}
+          >
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

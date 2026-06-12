@@ -44,6 +44,7 @@ interface AudioPlayerProps {
   onToggleRepeat?: () => void;
   favoriteTrackIds?: string[];
   onToggleFavorite?: (trackId: string) => void;
+  onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
 export default function AudioPlayer({
@@ -65,7 +66,8 @@ export default function AudioPlayer({
   onToggleShuffle,
   onToggleRepeat,
   favoriteTrackIds = [],
-  onToggleFavorite
+  onToggleFavorite,
+  onShowToast
 }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -468,7 +470,11 @@ export default function AudioPlayer({
               if (isPremium) {
                 onToggleDownloadTrack(currentTrack.track_id);
               } else {
-                alert('Premium Subscription is required for downloading tracks for offline listening.');
+                if (onShowToast) {
+                  onShowToast('Premium Subscription is required for offline downloads.', 'warning');
+                } else {
+                  alert('Premium Subscription is required for downloading tracks for offline listening.');
+                }
               }
             }}
             className={`p-1.5 rounded transition hover:bg-neutral-900 ${
