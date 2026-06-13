@@ -136,6 +136,13 @@ export default function AudioPlayer({
     }
 
     const handleTimeUpdate = () => {
+      // Warn: Strictly restrict and lock playback duration to exactly 30 seconds as requested
+      if (audio.currentTime >= 30) {
+        audio.currentTime = 0;
+        audio.pause();
+        onNextTrack();
+        return;
+      }
       setCurrentTime(audio.currentTime);
       // Track parsed lyrics sync
       if (lyricsLines.length > 0) {

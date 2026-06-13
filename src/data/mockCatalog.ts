@@ -1,5 +1,5 @@
 import { Track, Artist, Album, Podcast, PlatformAnalytics } from '../types';
-import { POPULAR_ARTISTS_DATABASE, INSTRUMENTS_AND_NOTES_IMAGES } from './popularArtists';
+import { POPULAR_ARTISTS_DATABASE, INSTRUMENTS_AND_NOTES_IMAGES, getNotesAndInstrumentsImageForName } from './popularArtists';
 
 export const INITIAL_TRACKS: Track[] = [
   {
@@ -721,7 +721,7 @@ const STATIC_ARTISTS: Artist[] = [
     genres: ['Desi Hip Hop', 'Rap', 'Indian Hip Hop'],
     followers_count: 4331184,
     verified: true,
-    avatar_url: INSTRUMENTS_AND_NOTES_IMAGES[0],
+    avatar_url: getNotesAndInstrumentsImageForName('KR$NA'),
     tracks: [INITIAL_TRACKS[0], INITIAL_TRACKS[1], INITIAL_TRACKS[2]],
     upcoming_events: [
       'Mumbai DHH Mega Fest - Nov 22, 2026',
@@ -735,7 +735,7 @@ const STATIC_ARTISTS: Artist[] = [
     genres: ['Alternative', 'Pop', 'Indie'],
     followers_count: 50000000,
     verified: true,
-    avatar_url: INSTRUMENTS_AND_NOTES_IMAGES[1],
+    avatar_url: getNotesAndInstrumentsImageForName('Billie Eilish'),
     tracks: [INITIAL_TRACKS[3], INITIAL_TRACKS[11]],
     upcoming_events: [
       'Seattle Climate Pledge Arena - June 20, 2026',
@@ -749,7 +749,7 @@ const STATIC_ARTISTS: Artist[] = [
     genres: ['R&B/Soul', 'Synth Pop'],
     followers_count: 75000000,
     verified: true,
-    avatar_url: INSTRUMENTS_AND_NOTES_IMAGES[2],
+    avatar_url: getNotesAndInstrumentsImageForName('The Weeknd'),
     tracks: [INITIAL_TRACKS[7], INITIAL_TRACKS[19]],
     upcoming_events: [
       'Vapor Arcade Fest, Los Angeles - July 2, 2026'
@@ -762,7 +762,7 @@ const STATIC_ARTISTS: Artist[] = [
     genres: ['Hip-Hop/Rap', 'Rap'],
     followers_count: 62000000,
     verified: true,
-    avatar_url: INSTRUMENTS_AND_NOTES_IMAGES[3],
+    avatar_url: getNotesAndInstrumentsImageForName('Eminem'),
     tracks: [INITIAL_TRACKS[5], INITIAL_TRACKS[8]],
     upcoming_events: [
       'Brooklyn Under Midnight Mainstage - June 30, 2026'
@@ -775,7 +775,7 @@ const STATIC_ARTISTS: Artist[] = [
     genres: ['Pop', 'Country', 'Alternative'],
     followers_count: 110000000,
     verified: true,
-    avatar_url: INSTRUMENTS_AND_NOTES_IMAGES[4],
+    avatar_url: getNotesAndInstrumentsImageForName('Taylor Swift'),
     tracks: [INITIAL_TRACKS[6], INITIAL_TRACKS[9], INITIAL_TRACKS[10]],
     upcoming_events: [
       'Green Forest Barn, Portland ME - June 24, 2026'
@@ -813,7 +813,7 @@ export const INITIAL_ARTISTS: Artist[] = (() => {
             ? (name === 'KR$NA' ? 4331184 : Math.floor(Math.random() * 5000000) + 1200000)
             : Math.floor(Math.random() * 400000) + 80000,
           verified: dbArt ? true : false,
-          avatar_url: dbArt?.img || track.artwork_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+          avatar_url: getNotesAndInstrumentsImageForName(name),
           tracks: artistTracks,
           upcoming_events: [
             `${name} Arena Spectacle - Oct 18, 2026`,
@@ -840,7 +840,7 @@ export const INITIAL_ARTISTS: Artist[] = (() => {
         genres: [dbArt.genre],
         followers_count: Math.floor(Math.random() * 12000000) + 1500000,
         verified: true,
-        avatar_url: dbArt.img || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+        avatar_url: getNotesAndInstrumentsImageForName(dbArt.name),
         tracks: dbTracks,
         upcoming_events: [
           `${dbArt.name} Live in Concert - Nov 12, 2026`
@@ -960,7 +960,7 @@ export const INITIAL_ARTISTS: Artist[] = (() => {
           album: `${trackDef.title} (Single)`,
           duration_ms: trackDef.duration_ms,
           audio_url: trackDef.audio || 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/71/5c/80/715c80fc-ebe4-e713-487c-5bdefee6c6f3/mzaf_3698387428135478316.plus.aac.p.m4a',
-          artwork_url: targetArtist?.avatar_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80',
+          artwork_url: targetArtist?.avatar_url || getNotesAndInstrumentsImageForName(artistName),
           genre: 'Pop',
           plays: trackDef.plays,
           release_year: 2024,
@@ -996,39 +996,39 @@ export const INITIAL_ARTISTS: Artist[] = (() => {
 export const INITIAL_ALBUMS: Album[] = [
   {
     album_id: 'al-1',
-    title: 'Atmosphere',
-    artist: 'Lila Sterling',
-    release_date: '2025-04-12',
+    title: 'dont smile at me',
+    artist: 'Billie Eilish',
+    release_date: '2017-08-11',
     upc: '74829104051',
-    genre: 'Pop',
-    label: 'Sonic Waves Record Store',
-    type: 'LP',
-    artwork_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80',
-    tracks: [INITIAL_TRACKS[3], INITIAL_TRACKS[9]]
+    genre: 'Alternative',
+    label: 'Darkroom/Interscope Records',
+    type: 'EP',
+    artwork_url: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/02/1d/30/021d3036-5503-3ed3-df00-882f2833a6ae/17UM1IM17026.rgb.jpg/600x600bb.jpg',
+    tracks: [INITIAL_TRACKS[3]]
   },
   {
     album_id: 'al-2',
-    title: 'Retrogrid',
-    artist: 'Daft Pixel',
-    release_date: '2024-11-20',
+    title: 'folklore',
+    artist: 'Taylor Swift',
+    release_date: '2020-07-24',
     upc: '93021940192',
-    genre: 'Electronic',
-    label: 'Digital Pixel Lab',
+    genre: 'Alternative',
+    label: 'Republic Records',
     type: 'LP',
-    artwork_url: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80',
-    tracks: [INITIAL_TRACKS[4], INITIAL_TRACKS[7]]
+    artwork_url: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/ca/f3/67/caf367a5-2cf6-6b2e-a891-97dc57b19f08/20UMGIM64216.rgb.jpg/600x600bb.jpg',
+    tracks: [INITIAL_TRACKS[6]]
   },
   {
     album_id: 'al-3',
-    title: 'Rebel Beats',
-    artist: 'The Groovy Rebels',
-    release_date: '2026-02-05',
+    title: 'The Eminem Show',
+    artist: 'Eminem',
+    release_date: '2002-05-26',
     upc: '109204910492',
-    genre: 'Hip Hop',
-    label: 'Underground Vinyl Co.',
+    genre: 'Hip-Hop/Rap',
+    label: 'Aftermath/Interscope',
     type: 'LP',
-    artwork_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80',
-    tracks: [INITIAL_TRACKS[5], INITIAL_TRACKS[8]]
+    artwork_url: 'https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/dd/5c/e6/dd5ce621-f7d2-f767-7a08-e7a7eaa7870b/00602537526994.rgb.jpg/600x600bb.jpg',
+    tracks: [INITIAL_TRACKS[5]]
   }
 ];
 
@@ -1092,10 +1092,10 @@ export const INITIAL_ANALYTICS: PlatformAnalytics = {
   subscriber_count: 240890,
   revenue: 240890 * 9.99,
   top_tracks: [
-    { title: 'Midnight Shadows', artist: 'The Groovy Rebels', stream_count: 2310450 },
-    { title: 'Ocean Eyes', artist: 'Lila Sterling', stream_count: 1420950 },
-    { title: 'After Midnight', artist: 'The Groovy Rebels', stream_count: 1205300 },
-    { title: 'Neon Horizon', artist: 'Daft Pixel', stream_count: 894320 },
-    { title: 'Fading Summer', artist: 'Lila Sterling', stream_count: 890450 }
+    { title: 'ocean eyes', artist: 'Billie Eilish', stream_count: 2310450 },
+    { title: 'Blank Space', artist: 'Taylor Swift', stream_count: 1420950 },
+    { title: 'Without Me', artist: 'Eminem', stream_count: 1205300 },
+    { title: 'cardigan', artist: 'Taylor Swift', stream_count: 894320 },
+    { title: 'Cruel Summer', artist: 'Taylor Swift', stream_count: 890450 }
   ]
 };

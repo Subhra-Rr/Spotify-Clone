@@ -12,6 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Playlist, Artist } from '../types';
+import { getNotesAndInstrumentsImageForName } from '../data/popularArtists';
 
 interface SidebarProps {
   activeView: string;
@@ -192,7 +193,7 @@ export default function Sidebar({
                   }`}
                 >
                   <img
-                    src={artist.avatar_url}
+                    src={getNotesAndInstrumentsImageForName(artist.name)}
                     alt={artist.name}
                     className="w-10 h-10 object-cover rounded-full shadow flex-shrink-0 border border-neutral-900 bg-zinc-800"
                     referrerPolicy="no-referrer"

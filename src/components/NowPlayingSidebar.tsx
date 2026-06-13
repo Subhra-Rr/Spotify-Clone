@@ -27,17 +27,9 @@ export default function NowPlayingSidebar({
   artists = [],
   onShowToast
 }: NowPlayingSidebarProps) {
-  // If there is no track currently playing, return a beautiful placeholder empty state
+  // If there is no track currently playing, do not show the Now Playing panel
   if (!currentTrack) {
-    return (
-      <div className="w-80 bg-[#121212] rounded-lg flex-shrink-0 hidden lg:flex flex-col items-center justify-center p-6 text-center text-neutral-500 shadow-md">
-        <Disc className="w-12 h-12 mb-4 text-neutral-700 animate-spin" style={{ animationDuration: '6s' }} />
-        <h3 className="text-sm font-extrabold text-neutral-400">Now Playing View</h3>
-        <p className="text-xs text-neutral-600 mt-2 max-w-xs leading-relaxed">
-          Select or play any song from the home feed or click search to populate your active layout.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // Get next track in queue safely

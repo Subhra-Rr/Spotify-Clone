@@ -36,7 +36,7 @@ import {
 import { Track, Playlist, Podcast, Artist, Album, UserProfile } from '../types';
 import AdminPanel from './AdminPortal';
 import ArtistDetails from './ArtistDetails';
-import { getRandomArtists, POPULAR_ARTISTS_DATABASE } from '../data/popularArtists';
+import { getRandomArtists, POPULAR_ARTISTS_DATABASE, getNotesAndInstrumentsImageForName } from '../data/popularArtists';
 
 const PRESET_SEEDS = [
   "Chill study coding loops",
@@ -453,20 +453,7 @@ export default function MainContent({
               Welcome to high-fidelity playback. Choose a record, tweak the equalizer, or talk to your voice assistant.
             </p>
 
-            {/* Direct Studio Authenticity Banner */}
-            <div className="mt-5 bg-gradient-to-r from-emerald-950/40 via-[#121212] to-[#121212] border border-emerald-500/20 rounded-xl p-4 shadow-xl select-none max-w-4xl">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-[#1ED760] tracking-widest uppercase font-sans">ORIGINAL HIGH-FIDELITY TRACKS ONLY</h4>
-                  <p className="text-xs text-neutral-300 mt-1 font-sans font-semibold leading-relaxed">
-                    NO MOCK DATA/MUSIC/SONGS — All items in this catalog play the original studio recordings by choice or by force (the default 30-second high-fidelity preview clips remain fully operational).
-                  </p>
-                </div>
-              </div>
-            </div>
+
           </div>
 
           {/* Quick grid entries */}
@@ -718,7 +705,7 @@ export default function MainContent({
                 >
                   <div className="relative w-full aspect-square rounded-full mb-3.5 shadow-md overflow-hidden shrink-0 bg-neutral-900">
                     <img
-                      src={artist.img || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80'}
+                      src={getNotesAndInstrumentsImageForName(artist.name)}
                       alt={artist.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
@@ -847,29 +834,72 @@ export default function MainContent({
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredSearchTracks.map((track) => {
-                    const isCurrentlyPlayingThis = currentTrack?.track_id === track.track_id;
+                <div className="space-y-6">
+                  {/* Matching Artists section like a genuine streaming portal */}
+                  {(() => {
+                    const queryLower = searchQuery.toLowerCase().trim();
+                    const matchedArtists = artists.filter(a => a.name.toLowerCase().includes(queryLower));
+                    if (matchedArtists.length === 0) return null;
                     return (
-                      <div
-                        key={track.track_id}
-                        className={`bg-[#181818] hover:bg-[#252525] border transition p-3 rounded-lg flex items-center justify-between group ${
-                          isCurrentlyPlayingThis ? 'border-emerald-500/30 bg-neutral-900/80' : 'border-neutral-850'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => onPlayTrack(track)}>
-                          <img src={track.artwork_url} alt="art" className="w-11 h-11 object-cover rounded shadow flex-shrink-0 animate-fadeIn" />
-                          <div className="min-w-0">
-                            <p className={`text-xs font-semibold truncate flex items-center gap-1 ${
-                              isCurrentlyPlayingThis ? 'text-emerald-400 font-bold' : 'text-neutral-200'
-                            }`}>
-                              {track.title}
-                              {track.explicit && <span className="text-[8px] bg-red-950 text-red-500 px-1 rounded">E</span>}
-                            </p>
-                            <p className="text-[11px] text-neutral-500 mt-0.5 truncate">{track.artist}</p>
-                            <p className="text-[9px] text-neutral-600 truncate mt-0.5 font-mono">{track.album}</p>
-                          </div>
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-neutral-450 uppercase tracking-wider font-mono text-left">Featured Artists</h4>
+                        <div className="flex flex-wrap gap-3">
+                          {matchedArtists.slice(0, 5).map((art) => (
+                            <div
+                              key={art.artist_id}
+                              onClick={() => onSetView('artist-details', art.artist_id)}
+                              className="bg-[#181818] hover:bg-[#252525] border border-neutral-850 p-3 rounded-xl flex items-center gap-3 cursor-pointer transition select-none hover:border-emerald-500/20 active:scale-95 duration-200"
+                            >
+                              <img
+                                src={getNotesAndInstrumentsImageForName(art.name)}
+                                alt={art.name}
+                                className="w-10 h-10 object-cover rounded-full border border-neutral-800 flex-shrink-0"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="min-w-0 pr-1 text-left">
+                                <p className="text-xs font-bold text-neutral-200 hover:text-emerald-400 transition truncate">{art.name}</p>
+                                <p className="text-[10px] text-neutral-500 mt-0.5 font-sans">Verified Artist</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-neutral-450 uppercase tracking-wider font-mono text-left">Songs</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredSearchTracks.map((track) => {
+                        const isCurrentlyPlayingThis = currentTrack?.track_id === track.track_id;
+                        return (
+                          <div
+                            key={track.track_id}
+                            className={`bg-[#181818] hover:bg-[#252525] border transition p-3 rounded-lg flex items-center justify-between group ${
+                              isCurrentlyPlayingThis ? 'border-emerald-500/30 bg-neutral-900/80' : 'border-neutral-850'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onClick={() => onPlayTrack(track)}>
+                              <img src={track.artwork_url} alt="art" className="w-11 h-11 object-cover rounded shadow flex-shrink-0 animate-fadeIn" />
+                              <div className="min-w-0 text-left">
+                                <p className={`text-xs font-semibold truncate flex items-center gap-1 ${
+                                  isCurrentlyPlayingThis ? 'text-emerald-400 font-bold' : 'text-neutral-200'
+                                }`}>
+                                  {track.title}
+                                  {track.explicit && <span className="text-[8px] bg-red-950 text-red-500 px-1 rounded">E</span>}
+                                </p>
+                                <p
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSetView('artist-details', track.artist);
+                                  }}
+                                  className="text-[11px] text-neutral-400 mt-0.5 truncate hover:text-emerald-400 hover:underline cursor-pointer inline-block"
+                                >
+                                  {track.artist}
+                                </p>
+                                <p className="text-[9px] text-neutral-600 truncate mt-0.5 font-mono">{track.album}</p>
+                              </div>
+                            </div>
 
                         <div className="flex items-center gap-2">
                           {onToggleFavorite && (
@@ -943,6 +973,8 @@ export default function MainContent({
                       </div>
                     );
                   })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1875,7 +1907,7 @@ export default function MainContent({
                 {/* Shape circle cover wrapper */}
                 <div className="relative w-full aspect-square rounded-full mb-4 shadow-lg overflow-hidden shrink-0 bg-neutral-900">
                   <img
-                    src={artist.img || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80'}
+                    src={getNotesAndInstrumentsImageForName(artist.name)}
                     alt={artist.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
@@ -1929,6 +1961,7 @@ export default function MainContent({
               onTogglePlay={onTogglePlay}
               onToggleFollowArtist={onToggleFollowArtist}
               onToggleFavorite={onToggleFavorite || (() => {})}
+              onAppendTracks={onAppendTracks}
               onShowToast={onShowToast}
             />
           );
@@ -2039,7 +2072,7 @@ export default function MainContent({
                   >
                     <div className="relative w-28 h-28 mb-3 shadow-lg rounded-full overflow-hidden border border-neutral-800">
                       <img
-                        src={art.avatar_url}
+                        src={getNotesAndInstrumentsImageForName(art.name)}
                         alt={art.name}
                         className="w-full h-full object-cover rounded-full select-none"
                         referrerPolicy="no-referrer"

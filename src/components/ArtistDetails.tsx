@@ -17,6 +17,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { Artist, Track, UserProfile } from '../types';
+import { getNotesAndInstrumentsImageForName } from '../data/popularArtists';
 
 interface ArtistDetailsProps {
   artist: Artist;
@@ -29,6 +30,7 @@ interface ArtistDetailsProps {
   onTogglePlay: () => void;
   onToggleFollowArtist: (artistId: string) => void;
   onToggleFavorite: (trackId: string) => void;
+  onAppendTracks?: (newTracks: Track[]) => void;
   onShowToast?: (msg: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
@@ -43,10 +45,44 @@ export default function ArtistDetails({
   onTogglePlay,
   onToggleFollowArtist,
   onToggleFavorite,
+  onAppendTracks,
   onShowToast
 }: ArtistDetailsProps) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loadingTracks, setLoadingTracks] = useState(false);
   const isFollowing = currentUser.followedArtists?.includes(artist.artist_id) || false;
+
+  React.useEffect(() => {
+    if (!onAppendTracks) return;
+
+    let isMounted = true;
+    const loadRealArtistTracks = async () => {
+      setLoadingTracks(true);
+      try {
+        const queryUrl = `/api/search?q=${encodeURIComponent(artist.name)}`;
+        console.log(`[ArtistDetails] Fetching real tracks for "${artist.name}" from iTunes via secure proxy`);
+        const res = await fetch(queryUrl);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tracks && data.tracks.length > 0) {
+            onAppendTracks(data.tracks);
+          }
+        }
+      } catch (err) {
+        console.error('[ArtistDetails] Failed to load real artist tracks on-the-fly:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingTracks(false);
+        }
+      }
+    };
+
+    loadRealArtistTracks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [artist.name, onAppendTracks]);
 
   // Custom Indian numbering system formatting (e.g. 4331184 -> 43,31,184)
   const formatIndianNumber = (num: number): string => {
@@ -79,7 +115,7 @@ export default function ArtistDetails({
       <div 
         className="relative h-60 md:h-76 flex flex-col justify-end p-6 md:p-8 bg-cover bg-center"
         style={{ 
-          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(10,10,10,0.95)), url(${artist.avatar_url})` 
+          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(10,10,10,0.95)), url(${getNotesAndInstrumentsImageForName(artist.name)})` 
         }}
       >
         <div className="flex items-center gap-2 mb-2 select-none">
@@ -229,9 +265,35 @@ export default function ArtistDetails({
 
         {/* 4. Popular Songs List Section */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold font-sans text-white text-left">Popular</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold font-sans text-white text-left">Popular</h2>
+            {loadingTracks && (
+              <span className="text-[10px] text-emerald-400 font-mono animate-pulse uppercase tracking-wider">
+                Pooling music tracks...
+              </span>
+            )}
+          </div>
           
           <div className="flex flex-col gap-0.5">
+            {(!artist.tracks || artist.tracks.length === 0) && loadingTracks && (
+              <div className="space-y-3 py-1">
+                {[1, 2, 3, 4, 5].map((idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2.5 px-4 rounded-lg bg-neutral-900/30 animate-pulse border border-neutral-900/45">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-5 h-4 bg-neutral-850 rounded" />
+                      <div className="w-10 h-10 bg-neutral-850 rounded shrink-0" />
+                      <div className="space-y-1.5 flex-1 max-w-xs">
+                        <div className="h-3 bg-neutral-850 rounded w-3/4" />
+                        <div className="h-2.5 bg-neutral-850 rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="w-12 h-3 bg-neutral-850 rounded hidden sm:block mr-8" />
+                    <div className="w-16 h-3 bg-neutral-850 rounded" />
+                  </div>
+                ))}
+              </div>
+            )}
+
             {artist.tracks && artist.tracks.map((track, index) => {
               const isCurrent = activeTrackId === track.track_id;
               const isLiked = favoriteTrackIds.includes(track.track_id);

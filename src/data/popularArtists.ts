@@ -56,6 +56,7 @@ const RAW_ARTISTS: { name: string; genre: string }[] = [
   { name: 'Anirudh Ravichander', genre: 'Kollywood Electronic' },
   { name: 'Sid Sriram', genre: 'Carnatic Soulful Pop' },
   { name: 'Lata Mangeshkar', genre: 'Melody Queen (Legend)' },
+  { name: 'Asha Bhosle', genre: 'Evergreen Playback Icon (Legend)' },
   { name: 'Kishore Kumar', genre: 'Evergreen Retro (Legend)' },
   { name: 'Mohammed Rafi', genre: 'Classic Sufi (Legend)' },
   { name: 'Sidhu Moose Wala', genre: 'Punjabi Folk-Rap' },
@@ -127,37 +128,75 @@ const RAW_ARTISTS: { name: string; genre: string }[] = [
   { name: 'ABBA', genre: 'Swedish Pop Icons' }
 ];
 
-// Map over RAW_ARTISTS to dynamically assign beautiful warm-glow elements with zero broken mock headers
-export const POPULAR_ARTISTS_DATABASE: PopularArtist[] = RAW_ARTISTS.map((artist, idx) => {
-  const nameLower = artist.name.toLowerCase().trim();
-  let chosenImg = "";
+// Define a unified function to resolve a specific high-quality music note or instrument image for any artist name
+export function getNotesAndInstrumentsImageForName(name: string): string {
+  const nameLower = name.toLowerCase().trim();
   
-  if (nameLower.includes("justin bieber") || nameLower.includes("justin biber")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[2]; // Grand piano keys
-  } else if (nameLower.includes("imagine dragons")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[6]; // Fender electric guitar
-  } else if (nameLower.includes("sabrina carpenter")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[0]; // Double eighth music note glowing
-  } else if (nameLower.includes("travis scott")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[10]; // Modern music synthesizer keyboard
-  } else if (nameLower.includes("kendrick lamar")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[11]; // Golden drum kits cymbals
-  } else if (nameLower.includes("yoasobi")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[4]; // Classic wooden violin
-  } else if (nameLower.includes("fujii kaze")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[2]; // Grand piano keys
-  } else if (nameLower.includes("bad bunny")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[3]; // Glowing warm neon wave note
-  } else if (nameLower.includes("sukh-e") || nameLower.includes("sukh-e muzical doctorz")) {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[1]; // Premium acoustic guitar
-  } else {
-    chosenImg = INSTRUMENTS_AND_NOTES_IMAGES[idx % INSTRUMENTS_AND_NOTES_IMAGES.length];
+  // Explicit mapping for specific requested artists (covering spelling, typos, and variations)
+  if (nameLower.includes("justin bieber") || nameLower.includes("justin biber") || nameLower.includes("bieber") || nameLower.includes("biber")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[2]; // Grand piano keys
+  }
+  if (nameLower.includes("imagine dragons") || nameLower.includes("dragons")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[6]; // Fender electric guitar
+  }
+  if (nameLower.includes("sabrina carpenter") || nameLower.includes("sabrina") || nameLower.includes("carpenter")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[0]; // Double eighth music note glowing
+  }
+  if (nameLower.includes("travis scott") || nameLower.includes("travis") || nameLower.includes("scott")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[10]; // Keyboard synthesizer
+  }
+  if (nameLower.includes("kendrick lamar") || nameLower.includes("kendrick") || nameLower.includes("lamar")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[11]; // Golden drum kits cymbals
+  }
+  if (nameLower.includes("yoasobi")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[4]; // Classic wooden violin
+  }
+  if (nameLower.includes("fujii kaze") || nameLower.includes("kaze")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[2]; // Grand piano keys
+  }
+  if (nameLower.includes("bad bunny") || nameLower.includes("bunny")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[3]; // Glowing warm neon wave note
+  }
+  if (nameLower.includes("sukh-e") || nameLower.includes("sukhe") || nameLower.includes("muzical doctorz")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[12]; // Neon glowing music notes backdrop
+  }
+  if (nameLower.includes("jubin") || nameLower.includes("nautiyal") || nameLower.includes("nautiyel")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[1]; // Premium acoustic guitar
+  }
+  if (nameLower.includes("sidhu") || nameLower.includes("moose") || nameLower.includes("moosewala") || nameLower.includes("moose wala")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[6]; // Fender electric guitar
+  }
+  if (nameLower.includes("dhillon") || nameLower.includes("ap dhillon")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[10]; // Keyboard synthesizer
+  }
+  if (nameLower.includes("balasubramanyam") || nameLower.includes("balasubrahmanyam") || nameLower.includes("s.p.b") || nameLower.includes("s. p. b") || nameLower.includes("spb")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[12]; // Neon glowing music notes backdrop
+  }
+  if (nameLower.includes("ariana") || nameLower.includes("grandae") || nameLower.includes("grande")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[3]; // Glowing warm neon wave note
+  }
+  if (nameLower.includes("lana del") || nameLower.includes("del rey") || nameLower.includes("del ray") || nameLower.includes("lana")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[7]; // Elegant acoustic harp
+  }
+  if (nameLower.includes("dhanush")) {
+    return INSTRUMENTS_AND_NOTES_IMAGES[14]; // Bass guitar
   }
 
+  // Consistent hashing for any other artist name so it always maps to a valid notes or instrument image
+  let hash = 0;
+  for (let i = 0; i < nameLower.length; i++) {
+    hash = nameLower.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % INSTRUMENTS_AND_NOTES_IMAGES.length;
+  return INSTRUMENTS_AND_NOTES_IMAGES[index];
+}
+
+// Map over RAW_ARTISTS to dynamically assign beautiful warm-glow elements with zero broken mock headers
+export const POPULAR_ARTISTS_DATABASE: PopularArtist[] = RAW_ARTISTS.map((artist) => {
   return {
     name: artist.name,
     genre: artist.genre,
-    img: chosenImg
+    img: getNotesAndInstrumentsImageForName(artist.name)
   };
 });
 

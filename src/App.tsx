@@ -7,6 +7,7 @@ import {
   INITIAL_ANALYTICS
 } from './data/mockCatalog';
 import { Track, Playlist, Podcast, Artist, Album, UserProfile, EqualizerSetting, PlatformAnalytics } from './types';
+import { getNotesAndInstrumentsImageForName } from './data/popularArtists';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import AudioPlayer from './components/AudioPlayer';
@@ -234,53 +235,19 @@ export default function App() {
 
     const resolveOriginalSong = async () => {
       try {
-        const cleanTitle = currentTrack.title.replace(/\(Simulated\)/gi, '').trim();
-        const mainArtist = currentTrack.artist.split(/, | & | feat\. | and /i)[0]?.trim() || '';
-        const searchQuery = `${mainArtist} ${cleanTitle}`;
-        // Query up to 10 candidates to perform a multi-match selection instead of blindly taking limit=1
-        const searchUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=10`;
-        
-        console.log(`[AudioEngine] Searching iTunes for original song preview of: "${searchQuery}"`);
-        const response = await fetch(searchUrl);
+        const queryUrl = `/api/resolve-track?title=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist)}`;
+        console.log(`[AudioEngine] Accessing secure proxy resolver for: "${currentTrack.title}" by "${currentTrack.artist}"`);
+        const response = await fetch(queryUrl);
         if (response.ok) {
           const data = await response.json();
-          if (data.results && data.results.length > 0 && isSubscribed) {
-            // Screen candidates and verify if they are a genuine, reliable match
-            const bestMatch = data.results.find((item: any) => {
-              const itemTitle = (item.trackName || '').toLowerCase();
-              const itemArtist = (item.artistName || '').toLowerCase();
-              const reqTitle = cleanTitle.toLowerCase();
-              const reqArtist = currentTrack.artist.toLowerCase();
-              const reqMainArtist = mainArtist.toLowerCase();
-
-              const titleMatch = itemTitle.includes(reqTitle) || reqTitle.includes(itemTitle);
-              const artistMatch = itemArtist.includes(reqMainArtist) || reqMainArtist.includes(itemArtist) ||
-                                  itemArtist.includes(reqArtist) || reqArtist.includes(itemArtist);
-
-              // Token-overlap check for complex phrases
-              const getWords = (str: string) => 
-                str.replace(/[^a-z0-9\s]/g, '')
-                   .split(/\s+/)
-                   .filter(w => w.length > 2 && w !== 'the' && w !== 'feat' && w !== 'with');
-
-              const reqWords = getWords(reqTitle);
-              const resWords = getWords(itemTitle);
-              const overlapCount = reqWords.filter(w => resWords.includes(w)).length;
-
-              return (titleMatch && artistMatch) || (overlapCount > 0 && artistMatch) || (reqTitle === itemTitle);
-            });
-
-            const matchedResult = bestMatch || (data.results[0].trackName?.toLowerCase().includes(cleanTitle.toLowerCase()) ? data.results[0] : null);
-
-            if (matchedResult && matchedResult.previewUrl) {
-              console.log(`[AudioEngine] Verified reliable iTunes match: ${matchedResult.trackName} by ${matchedResult.artistName}`);
-              setResolvedAudioUrl(matchedResult.previewUrl);
-              return;
-            }
+          if (data && data.previewUrl && isSubscribed) {
+            console.log(`[AudioEngine] Verified reliable server-side matched stream: ${data.previewUrl}`);
+            setResolvedAudioUrl(data.previewUrl);
+            return;
           }
         }
       } catch (err) {
-        console.warn('[AudioEngine] iTunes lookup failed or was interrupted, using catalog fallback:', err);
+        console.warn('[AudioEngine] Secure server-side lookup failed, using catalog fallback:', err);
       }
 
       // Default fallback - play a high-fidelity lo-fi beat for simulated/procedural tracks to avoid random songs
@@ -453,6 +420,39 @@ export default function App() {
       const filteredNew = newTracks.filter(t => !prevIds.has(t.track_id));
       if (filteredNew.length === 0) return prev;
       return [...prev, ...filteredNew];
+    });
+
+    setArtists((prevArtists) => {
+      const updated = [...prevArtists];
+      newTracks.forEach(track => {
+        const artistName = (track.artist || '').trim();
+        if (!artistName) return;
+
+        const existsIdx = updated.findIndex(a => a.name.toLowerCase() === artistName.toLowerCase());
+        if (existsIdx !== -1) {
+          const art = updated[existsIdx];
+          const hasTrack = art.tracks.some(t => t.track_id === track.track_id);
+          if (!hasTrack) {
+            art.tracks = [...art.tracks, track];
+          }
+        } else {
+          const newArtistId = `artist-${artistName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          updated.push({
+            artist_id: newArtistId,
+            name: artistName,
+            bio: `${artistName} is a discovered artist whose high-fidelity tracks are registered and streamed dynamically on-demand from our secure core api networks.`,
+            genres: [track.genre || 'Soundtrack'],
+            followers_count: Math.floor(Math.random() * 500000) + 120000,
+            verified: true,
+            avatar_url: track.artwork_url || getNotesAndInstrumentsImageForName(artistName),
+            tracks: [track],
+            upcoming_events: [
+              `${artistName} Live in Concert - Nov 20, 2026`
+            ]
+          });
+        }
+      });
+      return updated;
     });
   };
 
@@ -842,7 +842,7 @@ export default function App() {
                         className="flex items-center gap-3 p-2 bg-neutral-900/40 hover:bg-neutral-800 rounded-md text-left transition-all border border-neutral-900 border-none select-none"
                       >
                         <img 
-                          src={artist.avatar_url} 
+                          src={getNotesAndInstrumentsImageForName(artist.name)} 
                           alt={artist.name} 
                           className="w-8 h-8 rounded-full object-cover shrink-0 bg-stone-800"
                           referrerPolicy="no-referrer"
